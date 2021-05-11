@@ -1,0 +1,57 @@
+summ_scalar_intvl: 1
+summ_image_intvl: 10
+summ_image_count: 10
+
+phase_param:
+  train:
+    data_filenames:
+      - dsprites.tfrecords
+    data_slots: 5
+    num_slots: 5
+  test:
+    data_filenames:
+      - dsprites.tfrecords
+    data_slots: 5
+    num_slots: 5
+
+loss_coef:
+  nll:
+    epoch: []
+    value: [1.0, 1.0]
+    linear: [true]
+  kld:
+    epoch: []
+    value: [0.5, 0.5]
+    linear: [true]
+  mask:
+    epoch: []
+    value: [0.5, 0.5]
+    linear: [true]
+
+normal_scale:
+  bck: 0.09
+  obj: 0.11
+lr: 1.0e-4
+data_layers: false
+data_cache: true
+data_shuffle: 60000
+batch_size: 64
+num_parallel: 8
+num_epochs: 1000
+num_tests: 5
+image_shape: [64, 64, 3]
+seg_overlap: false
+
+att_channel: [32, 32, 64, 64, 64]
+att_kernel: [3, 3, 3, 3, 3]
+att_stride: [2, 2, 2, 2, 1]
+att_hidden: [128, 128]
+
+enc_channel: [32, 32, 64, 64]
+enc_kernel: [3, 3, 3, 3]
+enc_stride: [2, 2, 2, 2]
+enc_hidden: [256]
+latent_size: 16
+dec_channel: [32, 32, 32, 32]
+dec_kernel: [3, 3, 3, 3]
+dec_shape: [72, 70, 68, 66]

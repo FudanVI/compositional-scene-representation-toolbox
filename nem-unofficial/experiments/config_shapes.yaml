@@ -1,0 +1,40 @@
+summ_scalar_intvl: 1
+summ_image_intvl: 1
+summ_image_count: 10
+
+phase_param:
+  train:
+    num_slots: 3
+    num_steps: 15
+    step_wt: null
+  valid:
+    num_slots: 3
+    num_steps: 15
+    step_wt: null
+  test:
+    num_slots: 3
+    num_steps: 15
+    step_wt: null
+
+loss_coef:
+  kld:
+    epoch: []
+    value: [1.0, 1.0]
+    linear: [true]
+
+normal_scale: null
+noise_prob: 0.2
+lr: 1.0e-3
+batch_size: 64
+num_workers: 1
+num_epochs: 50
+num_tests: 5
+ln_inputs: false
+seg_overlap: false
+
+state_size: 16
+
+dec_channel_list_rev: [32, 64]
+dec_kernel_list_rev: [4, 4]
+dec_stride_list_rev: [2, 2]
+dec_hidden_list_rev: [32]

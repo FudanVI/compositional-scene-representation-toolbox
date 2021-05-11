@@ -1,0 +1,42 @@
+summ_scalar_intvl: 1
+summ_image_intvl: 10
+summ_image_count: 10
+
+phase_param:
+  train:
+    data_filenames:
+      - tetris.tfrecords
+    data_slots: 4
+    num_slots: 4
+    num_steps: 5
+    step_wt: null
+  test:
+    data_filenames:
+      - tetris.tfrecords
+    data_slots: 4
+    num_slots: 4
+    num_steps: 5
+    step_wt: null
+
+normal_scale: 0.1
+lr: 3.0e-4
+clip_norm: 5.0
+data_layers: false
+data_cache: true
+data_shuffle: 60000
+batch_size: 32
+num_parallel: 8
+num_epochs: 500
+num_tests: 5
+image_shape: [35, 35, 3]
+seg_overlap: false
+
+upd_channel: [32, 32, 32]
+upd_kernel: [5, 5, 5]
+upd_stride: [1, 1, 1]
+upd_hidden: [128]
+state_size: null
+latent_size: 32
+dec_channel: [32, 32, 32, 32]
+dec_kernel: [5, 5, 5, 5, 5]
+dec_shape: [35, 35, 35, 35]

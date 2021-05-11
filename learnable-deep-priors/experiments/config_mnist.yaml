@@ -1,0 +1,60 @@
+summ_scalar_intvl: 1
+summ_image_intvl: 1
+summ_image_count: 10
+
+phase_param:
+  train:
+    num_slots: 3
+    num_steps: 5
+    step_wt: null
+  valid:
+    num_slots: 3
+    num_steps: 5
+    step_wt: null
+  test:
+    num_slots: 3
+    num_steps: 5
+    step_wt: null
+
+loss_coef:
+  bck_prior:
+    epoch: [25]
+    value: [1.0, 0.0, 0.0]
+    linear: [true, true]
+
+normal_scale: 0.25
+lr: 5.0e-4
+batch_size: 64
+num_epochs: 50
+num_tests: 5
+seg_overlap: false
+
+state_bck_size: 8
+state_obj_size: 16
+
+init_bck_channel: [16, 32, 64]
+init_bck_kernel: [3, 3, 3]
+init_bck_stride: [2, 2, 2]
+init_bck_hidden: [16]
+
+init_upd_channel: [32, 64, 128]
+init_upd_kernel: [5, 5, 5]
+init_upd_stride: [2, 2, 2]
+init_upd_hidden: [128]
+init_upd_state: 64
+init_obj_hidden: [32]
+
+dec_bck_channel_rev: [8, 8, 8, 8]
+dec_bck_kernel_rev: [3, 3, 3, 3]
+dec_bck_stride_rev: [2, 2, 2, 2]
+dec_bck_hidden_rev: [16]
+
+dec_apc_channel_rev: [8, 8, 8, 8]
+dec_apc_kernel_rev: [3, 3, 3, 3]
+dec_apc_stride_rev: [2, 2, 2, 2]
+dec_apc_hidden_rev: [16]
+
+dec_shp_channel_rev: [32, 64, 128]
+dec_shp_kernel_rev: [5, 5, 5]
+dec_shp_stride_rev: [2, 2, 2]
+dec_shp_hidden_rev: [16]
