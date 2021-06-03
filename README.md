@@ -1,6 +1,6 @@
-## Object-Centric Representations
+## Compositional Scene Representation Toolbox
 
-This repository contains implementations of the following papers:
+This toolbox contains the implementations of the following papers:
 - [Spatial Mixture Models with Learnable Deep Priors for Perceptual Grouping](https://arxiv.org/abs/1902.02502)
 - [Generative Modeling of Infinite Occluded Objects for Compositional Scene Representation](http://proceedings.mlr.press/v97/yuan19b.html)
 - [Knowledge-Guided Object Discovery with Acquired Deep Impressions](https://arxiv.org/abs/2103.10611)
