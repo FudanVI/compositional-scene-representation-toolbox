@@ -1,0 +1,11 @@
+crop_up: 10
+crop_down: 74
+crop_left: 22
+crop_right: 86
+
+split_train: 5000
+split_valid: 5100
+
+num_views: 10
+max_objects_train: 6
+max_objects_general: 10

@@ -4,3 +4,6 @@
 [submodule "monet-unofficial/multi_object_datasets"]
 	path = monet-unofficial/multi_object_datasets
 	url = https://github.com/jinyangyuan/multi_object_datasets.git
+[submodule "multiple-unspecified-viewpoints/clevr-dataset-gen"]
+	path = multiple-unspecified-viewpoints/clevr-dataset-gen
+	url = https://github.com/jinyangyuan/clevr-dataset-gen.git

@@ -1,0 +1,107 @@
+ckpt_intvl: 1000
+save_intvl: 50
+summ_image_count: 8
+
+phase_param:
+  train:
+    num_views: 1
+    num_slots: 8
+  valid:
+    num_views: 1
+    num_slots: 8
+  test:
+    num_views: 1
+    num_slots: 8
+  general:
+    num_views: 1
+    num_slots: 12
+
+loss_coef:
+  temp_pres:
+    step: []
+    value: [10.0, 0.5]
+    linear: [false]
+  temp_ord:
+    step: []
+    value: [10.0, 0.5]
+    linear: [false]
+  temp_shp:
+    step: []
+    value: [10.0, 0.5]
+    linear: [false]
+  noise_scale_1:
+    step: []
+    value: [0.0, 0.05]
+    linear: [true]
+  noise_scale_2:
+    step: []
+    value: [1.0, 1.0]
+    linear: [true]
+  sched_kld:
+    step: [100000]
+    value: [0.0, 1.0, 1.0]
+    linear: [true, true]
+
+normal_scale: 0.2
+lr: 4.0e-4
+lr_decay: 0.5
+decay_steps: 100000
+warmup_steps: 10000
+single_steps: 0
+batch_size: 64
+num_steps: 500000
+num_tests: 5
+seg_overlap: true
+
+enc_feat_channel: [64, 64, 64, 64]
+enc_feat_kernel: [5, 5, 5, 5]
+enc_feat_stride: [1, 1, 1, 1]
+enc_feat_feature: [64, 64]
+enc_feat_act: relu
+
+slot_steps: 3
+slot_qry_size: 64
+slot_view_size: 1
+slot_attr_size: 64
+enc_slot_feature_res: [128]
+enc_slot_act: relu
+
+enc_sel_feature: [512, 512]
+enc_sel_act: relu
+
+pres_alpha: 4.5
+latent_view_size: 1
+latent_attr_obj_size: 64
+latent_attr_bck_size: 8
+enc_view_feature: [512, 512]
+enc_view_act: relu
+enc_attr_obj_feature: [512, 512]
+enc_attr_obj_act: relu
+enc_attr_bck_feature: [512, 512]
+enc_attr_bck_act: relu
+
+dec_ord_feature: [512, 512]
+dec_ord_act: relu
+
+dec_obj_channel_rev: [64, 64, 64, 64, 64]
+dec_obj_kernel_rev: [3, 5, 5, 5, 5, 5]
+dec_obj_stride_rev: [1, 1, 2, 2, 2, 2]
+dec_obj_feature_rev: null
+dec_obj_act: relu
+dec_obj_mode: conv_t
+dec_obj_sbd: true
+
+dec_bck_channel_rev: [16, 16, 16]
+dec_bck_kernel_rev: [3, 5, 5, 5]
+dec_bck_stride_rev: [1, 1, 2, 2]
+dec_bck_feature_rev: null
+dec_bck_act: relu
+dec_bck_mode: conv_t
+dec_bck_sbd: true
+
+bl_momentum: 0.8
+net_bl_channel: [16, 16, 32, 32, 64, 64]
+net_bl_kernel: [3, 3, 3, 3, 3, 3]
+net_bl_stride: [1, 2, 1, 2, 1, 2]
+net_bl_feature: [256]
+net_bl_act: relu
