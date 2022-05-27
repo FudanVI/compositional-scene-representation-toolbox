@@ -28,3 +28,6 @@
 [submodule "genesis"]
 	path = genesis
 	url = https://github.com/FudanVI/genesis.git
+[submodule "MulMON"]
+	path = MulMON
+	url = https://github.com/FudanVI/MulMON.git
