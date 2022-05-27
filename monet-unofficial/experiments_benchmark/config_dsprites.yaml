@@ -4,28 +4,23 @@ summ_image_count: 8
 phase_param:
   train:
     data_filenames:
-      - room_train.tfrecords
-    data_slots: 7
+      - train.tfrecord
+    data_slots: 6
+    num_slots: 7
+  valid:
+    data_filenames:
+      - valid.tfrecord
+    data_slots: 6
     num_slots: 7
   test:
     data_filenames:
-      - room_train.tfrecords
-    data_slots: 7
+      - test.tfrecord
+    data_slots: 6
     num_slots: 7
-  empty_room:
+  general:
     data_filenames:
-      - room_empty_room.tfrecords
-    data_slots: 4
-    num_slots: 4
-  six_objects:
-    data_filenames:
-      - room_six_objects.tfrecords
-    data_slots: 10
-    num_slots: 10
-  identical_color:
-    data_filenames:
-      - room_identical_color.tfrecords
-    data_slots: 10
+      - general.tfrecord
+    data_slots: 9
     num_slots: 10
 
 loss_coef:

@@ -4,29 +4,24 @@ summ_image_count: 8
 phase_param:
   train:
     data_filenames:
-      - room_train.tfrecords
+      - train.tfrecord
     data_slots: 7
-    num_slots: 7
+    num_slots: 8
+  valid:
+    data_filenames:
+      - valid.tfrecord
+    data_slots: 7
+    num_slots: 8
   test:
     data_filenames:
-      - room_train.tfrecords
+      - test.tfrecord
     data_slots: 7
-    num_slots: 7
-  empty_room:
+    num_slots: 8
+  general:
     data_filenames:
-      - room_empty_room.tfrecords
-    data_slots: 4
-    num_slots: 4
-  six_objects:
-    data_filenames:
-      - room_six_objects.tfrecords
-    data_slots: 10
-    num_slots: 10
-  identical_color:
-    data_filenames:
-      - room_identical_color.tfrecords
-    data_slots: 10
-    num_slots: 10
+      - general.tfrecord
+    data_slots: 11
+    num_slots: 12
 
 loss_coef:
   nll:
@@ -54,12 +49,12 @@ batch_size_valid: 100
 num_parallel: 8
 num_steps: 1000000
 num_tests: 5
-image_shape: [64, 64, 3]
+image_shape: [128, 128, 3]
 seg_overlap: true
 
-att_channel: [32, 32, 64, 64, 64]
-att_kernel: [3, 3, 3, 3, 3]
-att_stride: [2, 2, 2, 2, 1]
+att_channel: [32, 32, 32, 64, 64, 64]
+att_kernel: [3, 3, 3, 3, 3, 3]
+att_stride: [2, 2, 2, 2, 2, 1]
 att_hidden: [128, 128]
 
 enc_channel: [32, 32, 64, 64]
@@ -69,4 +64,4 @@ enc_hidden: [256]
 latent_size: 16
 dec_channel: [32, 32, 32, 32]
 dec_kernel: [3, 3, 3, 3]
-dec_shape: [72, 70, 68, 66]
+dec_shape: [136, 134, 132, 130]

@@ -1,6 +1,5 @@
-summ_scalar_intvl: 1
-summ_image_intvl: 10
-summ_image_count: 10
+ckpt_intvl: 1000
+summ_image_count: 8
 
 phase_param:
   train:
@@ -16,15 +15,15 @@ phase_param:
 
 loss_coef:
   nll:
-    epoch: []
+    step: []
     value: [1.0, 1.0]
     linear: [true]
   kld:
-    epoch: []
+    step: []
     value: [0.5, 0.5]
     linear: [true]
   mask:
-    epoch: []
+    step: []
     value: [0.5, 0.5]
     linear: [true]
 
@@ -36,11 +35,12 @@ data_layers: false
 data_cache: true
 data_shuffle: 60000
 batch_size: 64
+batch_size_valid: 100
 num_parallel: 8
-num_epochs: 1000
+num_steps: 1000000
 num_tests: 5
 image_shape: [64, 64, 3]
-seg_overlap: false
+seg_overlap: true
 
 att_channel: [32, 32, 64, 64, 64]
 att_kernel: [3, 3, 3, 3, 3]
