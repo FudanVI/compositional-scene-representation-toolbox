@@ -19,3 +19,6 @@
 [submodule "slot-attention-unofficial/multi_object_datasets"]
 	path = slot-attention-unofficial/multi_object_datasets
 	url = https://github.com/jinyangyuan/multi_object_datasets.git
+[submodule "SPACE"]
+	path = SPACE
+	url = https://github.com/FudanVI/SPACE.git
