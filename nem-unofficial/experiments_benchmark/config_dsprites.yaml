@@ -3,40 +3,40 @@ summ_image_count: 8
 
 phase_param:
   train:
-    num_slots: 2
-    num_iters: 20
+    num_slots: 7
+    num_iters: 10
     iter_wt: null
   valid:
-    num_slots: 2
-    num_iters: 20
+    num_slots: 7
+    num_iters: 10
     iter_wt: null
   test:
-    num_slots: 2
-    num_iters: 20
+    num_slots: 7
+    num_iters: 10
     iter_wt: null
   general:
-    num_slots: 3
-    num_iters: 20
+    num_slots: 10
+    num_iters: 10
     iter_wt: null
 
 loss_coef:
   kld:
     step: []
-    value: [0.2, 0.2]
+    value: [0.05, 0.05]
     linear: [true]
 
 normal_scale: 0.25
 noise_prob: 0.2
 lr: 5.0e-4
 batch_size: 64
-num_steps: 500000
+num_steps: 50000
 num_tests: 5
-ln_inputs: true
-seg_overlap: false
+ln_inputs: false
+seg_overlap: true
 
-state_size: 250
+state_size: 16
 
 dec_channel_list_rev: [32, 64, 128]
 dec_kernel_list_rev: [4, 4, 4]
 dec_stride_list_rev: [2, 2, 2]
-dec_hidden_list_rev: [512]
+dec_hidden_list_rev: [32]

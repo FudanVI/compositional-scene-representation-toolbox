@@ -13,7 +13,6 @@ function func {
         --train
 }
 
-export CUDA_VISIBLE_DEVICES='0'
 run_file='../src/main.py'
 folder_data='../data'
 
@@ -21,7 +20,7 @@ name='shapes'
 file_data='shapes'
 func
 
-file_data='flying_shapes_3_5'
+file_data='flying_shapes_3_3'
 for name in 'flying_shapes_3_3' 'flying_shapes_3_5'; do
     func
 done

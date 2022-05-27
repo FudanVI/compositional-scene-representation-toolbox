@@ -37,9 +37,9 @@ name='flying_mnist_hard_3digits'
 convert
 
 python $file_combine \
-    --name_out 'flying_shapes_3_5' \
+    --name_out 'flying_shapes_3_3' \
     --name_in_1 'flying_shapes' \
-    --name_in_2 'flying_shapes_5'
+    --name_in_2 'flying_shapes'
 python $file_combine \
     --name_out 'flying_shapes_5_3' \
     --name_in_1 'flying_shapes_5' \

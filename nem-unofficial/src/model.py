@@ -18,10 +18,10 @@ class ModelBase(nn.Module):
 
     def forward(self, data, phase_param, require_extra=True, eps=1e-10):
         num_slots = phase_param['num_slots']
-        num_steps = phase_param['num_steps']
-        step_wt = self.get_step_wt(phase_param)
+        num_iters = phase_param['num_iters']
+        iter_wt = self.get_iter_wt(phase_param)
         data = {key: val.cuda(non_blocking=True) for key, val in data.items()}
-        data = self.convert_data(data, num_steps)
+        data = self.convert_data(data, num_iters)
         images_seq = data['image'].float() / 255
         segments = data['segment'][:, None, None].long()
         scatter_shape = [segments.shape[0], segments.max() + 1, *segments.shape[2:]]
@@ -40,9 +40,9 @@ class ModelBase(nn.Module):
         losses = {key: [] for key in ['elbo', 'kld']}
         raw_pixel_ll, log_gamma = None, None
         # Iterations
-        for step in range(num_steps):
-            noisy_images = self.add_noise(images_seq[step])
-            targets = images_seq[step + 1]
+        for idx_iter in range(num_iters):
+            noisy_images = self.add_noise(images_seq[idx_iter])
+            targets = images_seq[idx_iter + 1]
             upd_in = gamma * (noisy_images[None] - apc)
             outputs, states = self.upd(upd_in, states)
             apc_base = self.dec(outputs, num_slots)
@@ -50,15 +50,15 @@ class ModelBase(nn.Module):
             log_prob = raw_pixel_ll + torch.full_like(raw_pixel_ll, log_mask)
             gamma = torch.softmax(log_prob, dim=0).detach()
             log_gamma = torch.log_softmax(log_prob, dim=0).detach()
-            step_losses = {
+            iter_losses = {
                 'elbo': gamma * (log_gamma - log_prob),
                 'kld': (1 - gamma) * kld,
             }
-            for key, val in step_losses.items():
+            for key, val in iter_losses.items():
                 losses[key].append(val.sum([0, *range(2, val.dim())]))
         # Outputs
         losses = {key: torch.stack(val, dim=1) for key, val in losses.items()}
-        losses = {key: (step_wt * val).sum(1) for key, val in losses.items()}
+        losses = {key: (iter_wt * val).sum(1) for key, val in losses.items()}
         apc = apc.transpose(0, 1)
         mask = gamma.transpose(0, 1)
         recon = (mask * apc).sum(1)
@@ -82,21 +82,21 @@ class ModelBase(nn.Module):
         raise NotImplementedError
 
     @staticmethod
-    def get_step_wt(phase_param):
-        if phase_param['step_wt'] is None:
-            step_wt = torch.ones([1, phase_param['num_steps']])
+    def get_iter_wt(phase_param):
+        if phase_param['iter_wt'] is None:
+            iter_wt = torch.ones([1, phase_param['num_iters']])
         else:
-            step_wt = torch.tensor([phase_param['step_wt']]).reshape(1, phase_param['num_steps'])
-        step_wt /= step_wt.sum(1, keepdim=True)
-        return step_wt.cuda(non_blocking=True)
+            iter_wt = torch.tensor([phase_param['iter_wt']]).reshape(1, phase_param['num_iters'])
+        iter_wt /= iter_wt.sum(1, keepdim=True)
+        return iter_wt.cuda(non_blocking=True)
 
     @staticmethod
-    def convert_data(data, num_steps):
+    def convert_data(data, num_iters):
         for key, val in data.items():
             if val.shape[1] == 1:
-                val = val.expand(-1, num_steps + 1, *([-1] * (val.dim() - 2)))
+                val = val.expand(-1, num_iters + 1, *([-1] * (val.dim() - 2)))
             else:
-                val = val[:, :num_steps + 1]
+                val = val[:, :num_iters + 1]
             if key != 'image':
                 val = val[:, -1]
             data[key] = val
