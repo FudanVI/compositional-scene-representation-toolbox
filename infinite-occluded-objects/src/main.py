@@ -11,11 +11,13 @@ def get_config():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path_config')
     parser.add_argument('--path_data')
+    parser.add_argument('--path_pretrain')
     parser.add_argument('--folder_log')
     parser.add_argument('--folder_out')
     parser.add_argument('--timestamp')
     parser.add_argument('--num_tests', type=int)
     parser.add_argument('--seq_update', action='store_true')
+    parser.add_argument('--debug', action='store_true')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--use_timestamp', action='store_true')
@@ -27,6 +29,8 @@ def get_config():
     for key, val in args.__dict__.items():
         if key not in config or val is not None:
             config[key] = val
+    if config['debug']:
+        config['ckpt_intvl'] = 1
     if config['resume']:
         config['train'] = True
     if config['timestamp'] is None:

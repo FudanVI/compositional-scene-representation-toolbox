@@ -25,24 +25,32 @@ class Dataset(utils_data.Dataset):
 
 def get_data_loaders(config):
     image_shape = None
-    data_loaders = {}
+    datasets = {}
     with h5py.File(config['path_data'], 'r', libver='latest', swmr=True) as f:
         phase_list = [*f.keys()]
         if not config['train']:
-            phase_list = [n for n in phase_list if n not in ['train', 'valid']]
+            phase_list = [val for val in phase_list if val not in ['train', 'valid']]
+        index_sel = slice(config['batch_size']) if config['debug'] else ()
         for phase in phase_list:
-            data = {key: f[phase][key][()] for key in ['image', 'segment', 'overlap']}
+            data = {key: f[phase][key][index_sel] for key in f[phase] if key in ['image', 'segment', 'overlap']}
             data['image'] = np.moveaxis(data['image'], -1, -3)
             if image_shape is None:
                 image_shape = data['image'].shape[-3:]
             else:
                 assert image_shape == data['image'].shape[-3:]
-            data_loaders[phase] = utils_data.DataLoader(
-                Dataset(data),
+            datasets[phase] = Dataset(data)
+    if 'train' in datasets and 'valid' not in datasets:
+        datasets['valid'] = datasets['train']
+    data_loaders = {
+        key:
+            utils_data.DataLoader(
+                val,
                 batch_size=config['batch_size'],
-                num_workers=0,
-                shuffle=(phase == 'train'),
-                drop_last=(phase == 'train'),
+                num_workers=1,
+                shuffle=(key == 'train'),
+                drop_last=(key == 'train'),
                 pin_memory=True,
             )
+        for key, val in datasets.items()
+    }
     return data_loaders, image_shape

@@ -32,8 +32,8 @@ class Model(nn.Module):
 
     def forward(self, data, phase_param, ratio_mixture=1, temp_pres=None, temp_shp=None, hard=True, require_extra=True):
         num_slots = phase_param['num_slots']
-        num_steps = phase_param['num_steps']
-        step_wt = self.get_step_wt(phase_param)
+        num_iters = phase_param['num_iters']
+        iter_wt = self.get_iter_wt(phase_param)
         data = {key: val.cuda(non_blocking=True) for key, val in data.items()}
         images = data['image'].float() / 255
         segments = data['segment'][:, None, None].long()
@@ -45,18 +45,18 @@ class Model(nn.Module):
         states_back = self.init_back(images)
         result_bck = self.net_back(states_back[0])
         result_obj, states_dict = self.initialize_obj(images, result_bck, obj_slots, temp_pres, temp_shp, hard)
-        step_losses, kld_part = self.compute_step_losses(images, result_bck, result_obj, ratio_mixture)
-        losses = {key: [val] for key, val in step_losses.items()}
+        iter_losses, kld_part = self.compute_iter_losses(images, result_bck, result_obj, ratio_mixture)
+        losses = {key: [val] for key, val in iter_losses.items()}
         # Refinements
-        for step in range(num_steps):
+        for idx_iter in range(num_iters):
             upd_back_in = self.compute_upd_back_in(images, result_bck, result_obj)
             states_back = self.upd_back(upd_back_in, states_back)
             result_bck = self.net_back(states_back[0])
             result_obj, states_dict = self.update_obj(
                 images, result_bck, result_obj, states_dict, temp_pres, temp_shp, hard)
-            step_losses, kld_part = self.compute_step_losses(images, result_bck, result_obj, ratio_mixture)
-            step_losses['bck_prior'] = step_losses['bck_prior'] * (num_steps - step - 1) / num_steps
-            for key, val in step_losses.items():
+            iter_losses, kld_part = self.compute_iter_losses(images, result_bck, result_obj, ratio_mixture)
+            iter_losses['bck_prior'] = iter_losses['bck_prior'] * (num_iters - idx_iter - 1) / num_iters
+            for key, val in iter_losses.items():
                 losses[key].append(val)
         # Outputs
         indices = self.compute_indices(images, result_obj)
@@ -86,18 +86,18 @@ class Model(nn.Module):
         metrics = self.compute_metrics(
             images, segments, overlaps, mask_oh_all, mask_oh_obj, recon, apc_all, log_mask, pres)
         losses = {key: torch.stack(val, dim=1) for key, val in losses.items()}
-        losses = {key: (step_wt * val).sum(1) for key, val in losses.items()}
+        losses = {key: (iter_wt * val).sum(1) for key, val in losses.items()}
         losses['compare'] = -metrics['ll'] + kld_part
         return results, metrics, losses
 
     @staticmethod
-    def get_step_wt(phase_param):
-        if phase_param['step_wt'] is None:
-            step_wt = torch.ones([1, phase_param['num_steps'] + 1])
+    def get_iter_wt(phase_param):
+        if phase_param['iter_wt'] is None:
+            iter_wt = torch.ones([1, phase_param['num_iters'] + 1])
         else:
-            step_wt = torch.tensor([phase_param['step_wt']]).reshape(1, phase_param['num_steps'] + 1)
-        step_wt /= step_wt.sum(1, keepdim=True)
-        return step_wt.cuda(non_blocking=True)
+            iter_wt = torch.tensor([phase_param['iter_wt']]).reshape(1, phase_param['num_iters'] + 1)
+        iter_wt /= iter_wt.sum(1, keepdim=True)
+        return iter_wt.cuda(non_blocking=True)
 
     def initialize_obj(self, images, result_bck, obj_slots, temp_pres, temp_shp, hard):
         result_obj = {
@@ -332,7 +332,7 @@ class Model(nn.Module):
         kld = kld_1 + kld_2 + kld_3 + kld_4 + kld_5
         return kld.sum([0, *range(2, kld.ndim)])
 
-    def compute_step_losses(self, images, result_bck, result_obj, ratio_mixture):
+    def compute_iter_losses(self, images, result_bck, result_obj, ratio_mixture):
         # Loss NLL
         indices = self.compute_indices(images, result_obj)
         perm_vals = {key: self.permute(result_obj[key], indices)
@@ -361,8 +361,10 @@ class Model(nn.Module):
         sq_diff = (result_bck['bck'] - images).pow(2)
         loss_bck_prior = 0.5 * self.normal_invvar * sq_diff.sum([*range(1, sq_diff.ndim)])
         # Losses
+        zeta = torch.sigmoid(result_obj['logits_zeta'])[..., None, None]
+        loss_reg_shp = (zeta * result_obj['shp']).sum([0, *range(2, zeta.ndim)])
         losses = {'nll': loss_nll, 'kld_bck': kld_bck, 'kld_obj': kld_obj, 'kld_stn': kld_stn, 'kld_pres': kld_pres,
-                  'kld_mask': kld_mask, 'bck_prior': loss_bck_prior}
+                  'kld_mask': kld_mask, 'bck_prior': loss_bck_prior, 'reg_shp': loss_reg_shp}
         return losses, kld_part
 
     @staticmethod

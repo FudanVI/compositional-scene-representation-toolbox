@@ -1,0 +1,112 @@
+ckpt_intvl: 1000
+summ_image_count: 8
+
+phase_param:
+  train:
+    num_slots: 8
+    num_iters: 2
+    iter_wt: null
+  valid:
+    num_slots: 8
+    num_iters: 2
+    iter_wt: null
+  test:
+    num_slots: 8
+    num_iters: 2
+    iter_wt: null
+  general:
+    num_slots: 12
+    num_iters: 2
+    iter_wt: null
+
+loss_coef:
+  temp_pres:
+    step: []
+    value: [10.0, 0.5]
+    linear: [false]
+  temp_shp:
+    step: []
+    value: [10.0, 0.5]
+    linear: [false]
+  ratio_mixture:
+    step: [50000, 75000]
+    value: [0.0, 0.0, 1.0, 1.0]
+    linear: [true, true, true]
+  bck_prior:
+    step: [25000]
+    value: [0.2, 0.0, 0.0]
+    linear: [true, true]
+  reg_shp:
+    step: [100000, 125000]
+    value: [0.0, 0.0, 0.001, 0.001]
+    linear: [true, true, true]
+
+normal_scale: 0.3
+lr: 2.0e-4
+batch_size: 64
+num_steps: 200000
+num_tests: 5
+seg_overlap: true
+
+state_back_size: 256
+state_full_size: 256
+state_crop_size: 256
+
+init_back_channel: [4, 4, 8, 8, 16, 16]
+init_back_kernel: [3, 3, 3, 3, 3, 3]
+init_back_stride: [1, 2, 1, 2, 1, 2]
+init_back_hidden: [256]
+
+init_main_channel: [8, 8, 16, 16, 32, 32]
+init_main_kernel: [3, 3, 3, 3, 3, 3]
+init_main_stride: [1, 2, 1, 2, 1, 2]
+init_main_hidden: [256]
+init_main_state: 256
+init_full_hidden: [256]
+
+init_crop_channel: [8, 8, 16, 16, 32, 32]
+init_crop_kernel: [3, 3, 3, 3, 3, 3]
+init_crop_stride: [1, 2, 1, 2, 1, 2]
+init_crop_hidden: [256]
+
+upd_back_channel: [4, 4, 8, 8, 16, 16]
+upd_back_kernel: [3, 3, 3, 3, 3, 3]
+upd_back_stride: [1, 2, 1, 2, 1, 2]
+upd_back_hidden: [256]
+
+upd_full_channel: [8, 8, 16, 16, 32, 32]
+upd_full_kernel: [3, 3, 3, 3, 3, 3]
+upd_full_stride: [1, 2, 1, 2, 1, 2]
+upd_full_hidden: [256]
+
+upd_crop_channel: [8, 8, 16, 16, 32, 32]
+upd_crop_kernel: [3, 3, 3, 3, 3, 3]
+upd_crop_stride: [1, 2, 1, 2, 1, 2]
+upd_crop_hidden: [256]
+
+latent_bck_size: 8
+enc_bck_hidden: [256]
+dec_bck_avg_hidden_rev: [32, 32]
+dec_bck_res_channel_rev: [8, 8, 8, 8, 8]
+dec_bck_res_kernel_rev: [3, 3, 3, 3, 3]
+dec_bck_res_stride_rev: [2, 2, 2, 2, 2]
+dec_bck_res_hidden_rev: []
+
+prior_pres_alpha: 4.5
+enc_pres_hidden: [256, 256]
+
+prior_stn_mu: [-1.0, -1.0, 0.0, 0.0]
+prior_stn_std: [0.5, 0.5, 0.5, 0.5]
+enc_stn_hidden: [256, 256]
+
+latent_obj_size: 64
+enc_obj_hidden: [256]
+dec_apc_avg_hidden_rev: [64, 64]
+dec_apc_res_channel_rev: [8, 8, 16, 16, 32, 32]
+dec_apc_res_kernel_rev: [3, 3, 3, 3, 3, 3]
+dec_apc_res_stride_rev: [1, 2, 1, 2, 1, 2]
+dec_apc_res_hidden_rev: [256]
+dec_shp_channel_rev: [8, 8, 16, 16, 32, 32]
+dec_shp_kernel_rev: [3, 3, 3, 3, 3, 3]
+dec_shp_stride_rev: [1, 2, 1, 2, 1, 2]
+dec_shp_hidden_rev: [256]
