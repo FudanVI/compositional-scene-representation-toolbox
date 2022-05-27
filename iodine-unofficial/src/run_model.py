@@ -1,4 +1,3 @@
-import gzip
 import h5py
 import matplotlib
 matplotlib.use('Agg')
@@ -8,16 +7,15 @@ import os
 import pickle
 import tensorflow.compat.v1 as tf
 from model import get_batch_size
-from metric import compute_metrics
 
 
-def get_step_wt(step_wt, num_steps):
-    if step_wt is None:
-        step_wt = tf.constant([*range(1, num_steps + 1)], dtype=tf.float32, name='step_wt')
+def get_iter_wt(iter_wt, num_iters):
+    if iter_wt is None:
+        iter_wt = tf.constant([*range(1, num_iters + 1)], dtype=tf.float32, name='iter_wt')
     else:
-        assert len(step_wt) == num_steps
-        step_wt = tf.constant(step_wt, dtype=tf.float32, name='step_wt')
-    return step_wt
+        assert len(iter_wt) == num_iters
+        iter_wt = tf.constant(iter_wt, dtype=tf.float32, name='iter_wt')
+    return iter_wt
 
 
 def get_outputs(strategy, op_results, op_metrics, op_losses, op_grad_norm=None, name='outputs'):
@@ -51,7 +49,7 @@ def get_train_ops(strategy, config, data_loaders, net, optimizer, phase='train')
         batch_size = get_batch_size(images)
         with tf.GradientTape() as tape:
             results, metrics, losses = net(
-                images, segments, overlaps, phase_param['num_slots'], phase_param['num_steps'], step_wt)
+                images, segments, overlaps, phase_param['num_slots'], phase_param['num_iters'], iter_wt)
             num_gpus = strategy.num_replicas_in_sync
             desired_gpus = 8
             if num_gpus >= desired_gpus:
@@ -93,7 +91,7 @@ def get_train_ops(strategy, config, data_loaders, net, optimizer, phase='train')
         with tf.name_scope('data'):
             data = data_loaders[phase].get_next()
         phase_param = config['phase_param'][phase]
-        step_wt = get_step_wt(phase_param['step_wt'], phase_param['num_steps'])
+        iter_wt = get_iter_wt(phase_param['iter_wt'], phase_param['num_iters'])
         op_results, op_metrics, op_losses, op_optimization, op_grad_norm = \
             strategy.experimental_run_v2(get_replica, args=(data['image'], data['segment'], data['overlap']))
         ops, phs = get_outputs(strategy, op_results, op_metrics, op_losses, op_grad_norm)
@@ -104,20 +102,20 @@ def get_train_ops(strategy, config, data_loaders, net, optimizer, phase='train')
 def get_valid_ops(strategy, config, data_loaders, net, phase='valid'):
     def get_replica(images, segments, overlaps):
         results, metrics, losses = net(
-            images, segments, overlaps, phase_param['num_slots'], phase_param['num_steps'], step_wt)
+            images, segments, overlaps, phase_param['num_slots'], phase_param['num_iters'], iter_wt)
         return results, metrics, losses
     with tf.name_scope('{}_ops'.format(phase)):
         with tf.name_scope('data'):
             data = data_loaders[phase].get_next()
         phase_param = config['phase_param'][phase]
-        step_wt = get_step_wt(phase_param['step_wt'], phase_param['num_steps'])
+        iter_wt = get_iter_wt(phase_param['iter_wt'], phase_param['num_iters'])
         op_results, op_metrics, op_losses = \
             strategy.experimental_run_v2(get_replica, args=(data['image'], data['segment'], data['overlap']))
         ops, phs = get_outputs(strategy, op_results, op_metrics, op_losses)
     return ops, phs
 
 
-def add_summary_image(sess, summary_writer, config, epoch, ops, phs, results, dpi=150):
+def add_summary_image(sess, summary_writer, config, step, ops, phs, results, dpi=150):
     def convert_image(image):
         image = (np.clip(image, 0, 1) * 255).astype(np.uint8)
         if image.shape[2] == 1:
@@ -151,64 +149,48 @@ def add_summary_image(sess, summary_writer, config, epoch, ops, phs, results, dp
         out = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8').reshape(height, width, -1)[None]
         plt.close(fig)
         return out
-    if epoch % config['summ_image_intvl'] == 0:
-        overview_list = [get_overview(idx) for idx in range(config['summ_image_count'])]
-        overview = np.concatenate(overview_list, axis=1)
-        summ_image = sess.run(ops['summ_image'], feed_dict={phs['summ_image']: overview})
-        summary_writer.add_summary(summ_image, epoch)
-        summary_writer.flush()
+    overview_list = [get_overview(idx) for idx in range(config['summ_image_count'])]
+    overview = np.concatenate(overview_list, axis=1)
+    summ_image = sess.run(ops['summ_image'], feed_dict={phs['summ_image']: overview})
+    summary_writer.add_summary(summ_image, step)
     return
 
 
-def add_summary_scalar(sess, summary_writer, config, epoch, ops, phs, epoch_scalars):
-    if epoch % config['summ_scalar_intvl'] == 0:
-        summ_scalar = sess.run(
-            ops['summ_scalar'], feed_dict={phs['summ_scalar'][key]: val for key, val in epoch_scalars.items()})
-        summary_writer.add_summary(summ_scalar, epoch)
-        summary_writer.flush()
+def add_summary_scalar(sess, summary_writer, step, ops, phs, scalars):
+    summ_scalar = sess.run(ops['summ_scalar'], feed_dict={phs['summ_scalar'][key]: val for key, val in scalars.items()})
+    summary_writer.add_summary(summ_scalar, step)
     return
 
 
 def train_model(strategy, config, data_loaders, net, phase_train='train', phase_valid='valid'):
     def initialize():
         if config['resume']:
-            with open(path_ckpt_epoch, 'rb') as f:
-                ckpt_epoch = pickle.load(f)
-            out_start_epoch = ckpt_epoch['epoch'] + 1
-            out_best_epoch = ckpt_epoch['best_epoch']
-            out_best_loss = ckpt_epoch['best_loss']
+            with open(path_ckpt_step, 'rb') as f:
+                ckpt_step = pickle.load(f)
+            out_step = ckpt_step['step']
+            out_best_step = ckpt_step['best_step']
+            out_best_loss = ckpt_step['best_loss']
             path_ckpt_param = tf.train.latest_checkpoint(config['folder_out'], latest_filename=config['ckpt_curr'])
             saver_curr.restore(sess, path_ckpt_param)
-            print('Resume training from epoch {}'.format(out_start_epoch))
+            print('Resume training from step {}'.format(out_step))
         else:
-            out_start_epoch = 0
-            out_best_epoch = -1
+            out_step = 0
+            out_best_step = -1
             out_best_loss = float('inf')
             sess.run(tf.global_variables_initializer())
             print('Start training')
         print()
-        return out_start_epoch, out_best_epoch, out_best_loss
-    def epoch_train(ops, phs):
-        sess.run(data_loaders[phase_train].initializer)
-        results, scalars, _ = sess.run([ops['results'], ops['scalars'], ops['optimization']])
-        epoch_scalars = {key: [val] for key, val in scalars.items()}
-        add_summary_image(sess, summary_writer, config, epoch, ops, phs, results)
-        while True:
-            try:
-                scalars, _ = sess.run([ops['scalars'], ops['optimization']])
-                for key, val in scalars.items():
-                    epoch_scalars[key].append(val)
-            except tf.errors.OutOfRangeError:
-                break
-        epoch_scalars = {key: np.mean(np.concatenate(val)) if key != 'grad_norm' else np.mean(np.array(val))
-                         for key, val in epoch_scalars.items()}
-        add_summary_scalar(sess, summary_writer, config, epoch, ops, phs, epoch_scalars)
-        return epoch_scalars
+        return out_step, out_best_step, out_best_loss
+    def step_train(ops, phs):
+        scalars, _ = sess.run([ops['scalars'], ops['optimization']])
+        scalars = {key: np.mean(val) if key != 'grad_norm' else val for key, val in scalars.items()}
+        add_summary_scalar(sess, summary_writer, step, ops, phs, scalars)
+        return
     def epoch_valid(ops, phs):
         sess.run(data_loaders[phase_valid].initializer)
         results, scalars = sess.run([ops['results'], ops['scalars']])
         epoch_scalars = {key: [val] for key, val in scalars.items()}
-        add_summary_image(sess, summary_writer, config, epoch, ops, phs, results)
+        add_summary_image(sess, summary_writer, config, step, ops, phs, results)
         while True:
             try:
                 scalars = sess.run(ops['scalars'])
@@ -217,7 +199,7 @@ def train_model(strategy, config, data_loaders, net, phase_train='train', phase_
             except tf.errors.OutOfRangeError:
                 break
         epoch_scalars = {key: np.mean(np.concatenate(val)) for key, val in epoch_scalars.items()}
-        add_summary_scalar(sess, summary_writer, config, epoch, ops, phs, epoch_scalars)
+        add_summary_scalar(sess, summary_writer, step, ops, phs, epoch_scalars)
         return epoch_scalars
     optimizer = tf.train.AdamOptimizer(learning_rate=config['lr'])
     ops_train, phs_train = get_train_ops(strategy, config, data_loaders, net, optimizer, phase=phase_train)
@@ -230,35 +212,45 @@ def train_model(strategy, config, data_loaders, net, phase_train='train', phase_
     optimizer_param = optimizer.variables()
     saver_curr = tf.train.Saver(net_param + optimizer_param, max_to_keep=1, name='saver_curr')
     saver_best = tf.train.Saver(net_param, max_to_keep=1, name='saver_best')
-    path_ckpt_epoch = os.path.join(config['folder_out'], 'ckpt_epoch.pickle')
+    path_ckpt_step = os.path.join(config['folder_out'], 'ckpt_step.pickle')
     with tf.Session() as sess:
         with tf.summary.FileWriter(config['folder_log']) as summary_writer:
-            start_epoch, best_epoch, best_loss = initialize()
-            for epoch in range(start_epoch, config['num_epochs']):
-                epoch_scalars_all = {phase_train: epoch_train(ops_train, phs_train)}
-                if use_valid:
-                    epoch_scalars_all[phase_valid] = epoch_valid(ops_valid, phs_valid)
-                epoch_scalars_sel = epoch_scalars_all[phase_valid] if use_valid else epoch_scalars_all[phase_train]
-                if epoch_scalars_sel['loss_compare'] < best_loss:
-                    best_loss = epoch_scalars_sel['loss_compare']
-                    best_epoch = epoch
-                    saver_best.save(sess, os.path.join(config['folder_out'], 'best'), global_step=epoch,
-                                    latest_filename=config['ckpt_best'], write_meta_graph=False)
-                saver_curr.save(sess, os.path.join(config['folder_out'], 'curr'), global_step=epoch,
-                                latest_filename=config['ckpt_curr'], write_meta_graph=False)
-                with open(path_ckpt_epoch, 'wb') as f:
-                    pickle.dump({'epoch': epoch, 'best_epoch': best_epoch, 'best_loss': best_loss}, f)
-                print('Epoch: {}/{}'.format(epoch, config['num_epochs'] - 1))
-                for key, val in epoch_scalars_all.items():
-                    print(key.capitalize())
-                    print((' ' * 4).join([
-                        'ARI_A: {:.3f}'.format(val['metric_ari_all']),
-                        'MSE: {:.2e}'.format(val['metric_mse']),
-                        'LL: {:.1f}'.format(val['metric_ll']),
-                        'Count: {:.3f}'.format(val['metric_count']),
-                    ]))
-                print('Best Epoch: {}'.format(best_epoch))
-                print()
+            step, best_step, best_loss = initialize()
+            sess.run(data_loaders[phase_train].initializer)
+            while step < config['num_steps']:
+                step += 1
+                step_train(ops_train, phs_train)
+                if step % config['ckpt_intvl'] == 0:
+                    if use_valid:
+                        valid_scalars = epoch_valid(ops_valid, phs_valid)
+                        summary_writer.flush()
+                        if valid_scalars['loss_compare'] < best_loss:
+                            best_loss = valid_scalars['loss_compare']
+                            best_step = step
+                            saver_best.save(sess, os.path.join(config['folder_out'], 'best'), global_step=step,
+                                            latest_filename=config['ckpt_best'], write_meta_graph=False)
+                        saver_curr.save(sess, os.path.join(config['folder_out'], 'curr'), global_step=step,
+                                        latest_filename=config['ckpt_curr'], write_meta_graph=False)
+                        with open(path_ckpt_step, 'wb') as f:
+                            pickle.dump({'step': step, 'best_step': best_step, 'best_loss': best_loss}, f)
+                        print('Step: {}/{}'.format(step, config['num_steps']))
+                        print((' ' * 4).join([
+                            'ARI_A: {:.3f}'.format(valid_scalars['metric_ari_all']),
+                            'MSE: {:.2e}'.format(valid_scalars['metric_mse']),
+                            'LL: {:.1f}'.format(valid_scalars['metric_ll']),
+                            'Count: {:.3f}'.format(valid_scalars['metric_count']),
+                        ]))
+                        print('Best Step: {}'.format(best_step))
+                        print()
+                    else:
+                        summary_writer.flush()
+                        saver_best.save(sess, os.path.join(config['folder_out'], 'best'), global_step=step,
+                                        latest_filename=config['ckpt_best'], write_meta_graph=False)
+                        saver_curr.save(sess, os.path.join(config['folder_out'], 'curr'), global_step=step,
+                                        latest_filename=config['ckpt_curr'], write_meta_graph=False)
+                        with open(path_ckpt_step, 'wb') as f:
+                            pickle.dump({'step': step, 'best_step': best_step, 'best_loss': best_loss}, f)
+                        print('Step: {}/{}'.format(step, config['num_steps']))
     return
 
 
@@ -267,7 +259,7 @@ def get_test_ops(strategy, config, data_loaders, net, phase='test'):
         results = {}
         for idx_run in range(config['num_tests']):
             sub_results, _, _ = net(
-                images, segments, overlaps, phase_param['num_slots'], phase_param['num_steps'], step_wt)
+                images, segments, overlaps, phase_param['num_slots'], phase_param['num_iters'], iter_wt)
             for key, val in sub_results.items():
                 if key in ['image']:
                     continue
@@ -281,7 +273,7 @@ def get_test_ops(strategy, config, data_loaders, net, phase='test'):
         with tf.name_scope('data'):
             data = data_loaders[phase].get_next()
         phase_param = config['phase_param'][phase]
-        step_wt = get_step_wt(phase_param['step_wt'], phase_param['num_steps'])
+        iter_wt = get_iter_wt(phase_param['iter_wt'], phase_param['num_iters'])
         op_results = strategy.experimental_run_v2(get_replica, args=(data['image'], data['segment'], data['overlap']))
         with tf.name_scope('merge'):
             if strategy.num_replicas_in_sync > 1:
@@ -293,8 +285,6 @@ def get_test_ops(strategy, config, data_loaders, net, phase='test'):
 def test_model(strategy, config, data_loaders, net):
     def get_path_detail():
         return os.path.join(config['folder_out'], '{}.h5'.format(phase))
-    def get_path_metric():
-        return os.path.join(config['folder_out'], '{}.pkl'.format(phase))
     phase_list = [n for n in config['phase_param'] if n not in ['train', 'valid']]
     run_dict = {}
     for phase in phase_list:
@@ -310,59 +300,17 @@ def test_model(strategy, config, data_loaders, net):
         for phase, results_op in run_dict.items():
             sess.run(data_loaders[phase].initializer)
             path_detail = get_path_detail()
-            results_all = {}
-            while True:
-                try:
-                    results = sess.run(results_op)
-                    for key, val in results.items():
-                        if key in results_all:
-                            results_all[key].append(val)
-                        else:
-                            results_all[key] = [val]
-                except tf.errors.OutOfRangeError:
-                    break
             with h5py.File(path_detail, 'w') as f:
-                for key, val in results_all.items():
-                    f.create_dataset(key, data=np.concatenate(val, axis=1), compression='gzip')
-    for phase in phase_list:
-        batch_size = config['batch_size']
-        phase_param = config['phase_param'][phase]
-        data = {}
-        for filename_tf in phase_param['data_filenames']:
-            filename_h5 = '.'.join(filename_tf.split('.')[:-1]) + '.h5'
-            with h5py.File(os.path.join(config['folder_data'], filename_h5), 'r') as f:
-                sub_data = {key: f[key][()] for key in f}
-            for key, val in sub_data.items():
-                if key in data:
-                    data[key].append(val)
-                else:
-                    data[key] = [val]
-        data = {key: np.concatenate(val) for key, val in data.items()}
-        path_detail = get_path_detail()
-        metrics_all = {}
-        with h5py.File(path_detail, 'r') as f:
-            results_all = {key: f[key] for key in f}
-            for offset in range(0, data['image'].shape[0], batch_size):
-                sub_data = {key: val[offset:offset + batch_size] for key, val in data.items()}
-                sub_results_all = {key: val[:, offset:offset + batch_size] for key, val in results_all.items()}
-                for key, val in sub_data.items():
-                    if key in ['segment', 'overlap']:
-                        sub_data[key] = val.astype(np.int)
-                    else:
-                        sub_data[key] = val.astype(np.float) / 255
-                sub_results_all = {key: val.astype(np.float) / 255 for key, val in sub_results_all.items()}
-                sub_metrics_all = compute_metrics(config, sub_data, sub_results_all)
-                for key, val in sub_metrics_all.items():
-                    if key in metrics_all:
-                        metrics_all[key].append(val)
-                    else:
-                        metrics_all[key] = [val]
-        for key, val in metrics_all.items():
-            if isinstance(val[0], tuple):
-                metrics_all[key] = tuple([np.concatenate(n, axis=1) for n in zip(*val)])
-            else:
-                metrics_all[key] = np.concatenate(val, axis=1)
-        path_metric = get_path_metric()
-        with gzip.open(path_metric, 'wb') as f:
-            pickle.dump(metrics_all, f)
+                while True:
+                    try:
+                        results = sess.run(results_op)
+                        for key, val in results.items():
+                            if key in f:
+                                f[key].resize(f[key].shape[1] + val.shape[1], axis=1)
+                                f[key][:, -val.shape[1]:] = val
+                            else:
+                                f.create_dataset(
+                                    key, data=val, maxshape=[val.shape[0], None, *val.shape[2:]], compression='gzip')
+                    except tf.errors.OutOfRangeError:
+                        break
     return

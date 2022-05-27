@@ -1,6 +1,5 @@
-summ_scalar_intvl: 1
-summ_image_intvl: 10
-summ_image_count: 10
+ckpt_intvl: 1000
+summ_image_count: 8
 
 phase_param:
   train:
@@ -8,15 +7,15 @@ phase_param:
       - tetris.tfrecords
     data_slots: 4
     num_slots: 4
-    num_steps: 5
-    step_wt: null
+    num_iters: 5
+    iter_wt: null
   test:
     data_filenames:
       - tetris.tfrecords
     data_slots: 4
     num_slots: 4
-    num_steps: 5
-    step_wt: null
+    num_iters: 5
+    iter_wt: null
 
 normal_scale: 0.1
 lr: 3.0e-4
@@ -25,11 +24,12 @@ data_layers: false
 data_cache: true
 data_shuffle: 60000
 batch_size: 32
+batch_size_valid: 100
 num_parallel: 8
-num_epochs: 500
+num_steps: 1000000
 num_tests: 5
 image_shape: [35, 35, 3]
-seg_overlap: false
+seg_overlap: true
 
 upd_channel: [32, 32, 32]
 upd_kernel: [5, 5, 5]

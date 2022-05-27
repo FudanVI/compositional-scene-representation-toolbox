@@ -25,10 +25,17 @@ def get_dataset(config, phase_param, phase, name='dataset'):
         dataset = dataset.map(decode, num_parallel_calls=config['num_parallel'])
         if config['data_cache'] and phase in ['train', 'valid']:
             dataset = dataset.cache()
-        if config['data_shuffle'] > 0 and phase == 'train':
-            dataset = dataset.shuffle(config['data_shuffle'])
+        if phase == 'train':
+            dataset = dataset.repeat()
+            if config['data_shuffle'] > 0:
+                dataset = dataset.shuffle(config['data_shuffle'])
         dataset = dataset.map(convert, num_parallel_calls=config['num_parallel'])
-        dataset = dataset.batch(config['batch_size'], drop_remainder=(phase in ['train', 'valid']))
+        if phase == 'train':
+            dataset = dataset.batch(config['batch_size'], drop_remainder=True)
+        elif phase == 'valid':
+            dataset = dataset.batch(config['batch_size_valid'], drop_remainder=True)
+        else:
+            dataset = dataset.batch(config['batch_size'] // 2, drop_remainder=False)
         dataset = dataset.prefetch(1)
     return dataset
 

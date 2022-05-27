@@ -4,16 +4,30 @@ summ_image_count: 8
 phase_param:
   train:
     data_filenames:
-      - dsprites.tfrecords
+      - train.tfrecord
     data_slots: 6
-    num_slots: 6
+    num_slots: 7
+    num_iters: 5
+    iter_wt: null
+  valid:
+    data_filenames:
+      - valid.tfrecord
+    data_slots: 6
+    num_slots: 7
     num_iters: 5
     iter_wt: null
   test:
     data_filenames:
-      - dsprites.tfrecords
+      - test.tfrecord
     data_slots: 6
-    num_slots: 6
+    num_slots: 7
+    num_iters: 5
+    iter_wt: null
+  general:
+    data_filenames:
+      - general.tfrecord
+    data_slots: 9
+    num_slots: 10
     num_iters: 5
     iter_wt: null
 

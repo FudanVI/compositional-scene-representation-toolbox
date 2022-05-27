@@ -29,7 +29,7 @@ class Model(snt.AbstractModule):
             self._ln_pixel_ll_excl = snt.LayerNorm(axis=[-3, -2, -1], offset=False, scale=False, name='ln_ll_exclude')
             self._ln_grad_post_param = snt.LayerNorm(axis=[-1], offset=False, scale=False, name='ln_grad_post_param')
 
-    def _build(self, images, segments, overlaps, num_slots, num_steps, step_wt):
+    def _build(self, images, segments, overlaps, num_slots, num_iters, iter_wt):
         batch_size = get_batch_size(images)
         idx_range = [*range(num_slots)]
         indices = []
@@ -38,8 +38,8 @@ class Model(snt.AbstractModule):
         gather_indices = tf.constant(indices, dtype=tf.int32, name='gather_indices')
         loc, raw_scale, states = self._init(batch_size, num_slots)
         loss_all_list = []
-        for step in range(num_steps):
-            with tf.name_scope('step_{}'.format(step + 1)):
+        for idx_iter in range(num_iters):
+            with tf.name_scope('iter_{}'.format(idx_iter + 1)):
                 with tf.GradientTape() as tape:
                     tape.watch([loc, raw_scale])
                     apc, mask, log_mask, logits_mask = self._dec(loc, raw_scale, batch_size)
@@ -54,8 +54,8 @@ class Model(snt.AbstractModule):
                 loc, raw_scale, states = self._upd(loc, raw_scale, upd_in, states, batch_size)
                 loss_all_list.append(loss_all)
         with tf.name_scope('loss_opt'):
-            loss_opt = tf.expand_dims(step_wt, axis=1) * tf.stack(loss_all_list)
-            loss_opt = tf.math.reduce_sum(loss_opt, axis=0) / tf.math.reduce_sum(step_wt)
+            loss_opt = tf.expand_dims(iter_wt, axis=1) * tf.stack(loss_all_list)
+            loss_opt = tf.math.reduce_sum(loss_opt, axis=0) / tf.math.reduce_sum(iter_wt)
         losses = {'nll': loss_nll, 'kld': loss_kld, 'opt': loss_opt, 'compare': loss_all}
         with tf.name_scope('outputs'):
             recon = tf.math.reduce_sum(mask * apc, axis=1)

@@ -4,23 +4,30 @@ summ_image_count: 8
 phase_param:
   train:
     data_filenames:
-      - clevr_train.tfrecords
-    data_slots: 11
-    num_slots: 7
+      - train.tfrecord
+    data_slots: 7
+    num_slots: 8
+    num_iters: 5
+    iter_wt: null
+  valid:
+    data_filenames:
+      - valid.tfrecord
+    data_slots: 7
+    num_slots: 8
     num_iters: 5
     iter_wt: null
   test:
     data_filenames:
-      - clevr_train.tfrecords
-    data_slots: 11
-    num_slots: 7
+      - test.tfrecord
+    data_slots: 7
+    num_slots: 8
     num_iters: 5
     iter_wt: null
-  extra:
+  general:
     data_filenames:
-      - clevr_extra.tfrecords
+      - general.tfrecord
     data_slots: 11
-    num_slots: 11
+    num_slots: 12
     num_iters: 5
     iter_wt: null
 
