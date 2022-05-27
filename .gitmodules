@@ -16,3 +16,6 @@
 [submodule "monet-unofficial/multi_object_datasets"]
 	path = monet-unofficial/multi_object_datasets
 	url = https://github.com/jinyangyuan/multi_object_datasets.git
+[submodule "slot-attention-unofficial/multi_object_datasets"]
+	path = slot-attention-unofficial/multi_object_datasets
+	url = https://github.com/jinyangyuan/multi_object_datasets.git

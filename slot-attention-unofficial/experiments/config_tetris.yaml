@@ -1,0 +1,40 @@
+ckpt_intvl: 1000
+summ_image_count: 8
+
+phase_param:
+  train:
+    data_filenames:
+      - tetris.tfrecords
+    data_slots: 4
+    num_slots: 4
+  test:
+    data_filenames:
+      - tetris.tfrecords
+    data_slots: 4
+    num_slots: 4
+
+lr: 4.0e-4
+lr_decay: 0.5
+decay_steps: 100000
+warmup_steps: 10000
+data_cache: true
+data_shuffle: 60000
+batch_size: 64
+num_parallel: 1
+num_steps: 500000
+num_tests: 5
+seg_overlap: true
+image_shape: [35, 35, 3]
+
+slot_steps: 3
+slot_size: 64
+
+enc_filters: [32, 32, 32, 32]
+enc_kernels: [5, 5, 5, 5]
+enc_strides: [1, 1, 1, 1]
+enc_main_units: [32, 32]
+enc_slot_units: [128]
+
+dec_filters: [32, 32, 32]
+dec_kernels: [5, 5, 5, 3]
+dec_strides: [1, 1, 1, 1]
