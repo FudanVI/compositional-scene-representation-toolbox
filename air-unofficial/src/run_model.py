@@ -1,4 +1,3 @@
-import gzip
 import h5py
 import math
 import matplotlib
@@ -6,24 +5,25 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import pickle
 import torch
 import torch.optim as optim
 from matplotlib.patches import Rectangle
 from torch.utils.tensorboard import SummaryWriter
-from metric import compute_metrics
 
 
-def compute_loss_coef(config, epoch):
+def compute_loss_coef(config, step=None):
+    step_last = config['num_steps']
+    if step is None:
+        step = step_last
     loss_coef = {'nll': 1, 'kld_back': 1, 'kld_pres': 1, 'kld_where': 1, 'kld_what': 1}
     for key, val in config['loss_coef'].items():
-        epoch_list = [0] + val['epoch'] + [config['num_epochs'] - 1]
-        assert len(epoch_list) == len(val['value'])
-        assert len(epoch_list) == len(val['linear']) + 1
-        assert epoch_list == sorted(epoch_list)
-        for idx in range(len(epoch_list) - 1):
-            if epoch <= epoch_list[idx + 1]:
-                ratio = (epoch - epoch_list[idx]) / (epoch_list[idx + 1] - epoch_list[idx])
+        step_list = [1] + val['step'] + [step_last]
+        assert len(step_list) == len(val['value'])
+        assert len(step_list) == len(val['linear']) + 1
+        assert step_list == sorted(step_list)
+        for idx in range(len(step_list) - 1):
+            if step <= step_list[idx + 1]:
+                ratio = (step - step_list[idx]) / (step_list[idx + 1] - step_list[idx])
                 val_1 = val['value'][idx]
                 val_2 = val['value'][idx + 1]
                 if val['linear'][idx]:
@@ -37,7 +37,7 @@ def compute_loss_coef(config, epoch):
     return loss_coef
 
 
-def compute_overview(config, images, results, dpi=150):
+def compute_overview(config, images, results, dpi=100):
     def convert_image(image):
         image = np.moveaxis(image, 0, 2)
         if image.shape[2] == 1:
@@ -86,7 +86,7 @@ def compute_overview(config, images, results, dpi=150):
         out = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8').reshape(height, width, -1)
         plt.close(fig)
         return out
-    summ_image_count = config['summ_image_count']
+    summ_image_count = min(config['summ_image_count'], config['batch_size'])
     image_batch = images[:summ_image_count].data.cpu().numpy()
     recon_batch = results['recon'][:summ_image_count].data.cpu().numpy()
     apc_batch = results['apc'][:summ_image_count].data.cpu().numpy()
@@ -100,82 +100,108 @@ def compute_overview(config, images, results, dpi=150):
     return overview
 
 
+def add_scalars(writer, metrics, losses, step, phase):
+    for key, val in metrics.items():
+        writer.add_scalar('{}/metric_{}'.format(phase, key), val, global_step=step)
+    for key, val in losses.items():
+        writer.add_scalar('{}/loss_{}'.format(phase, key), val, global_step=step)
+    return
+
+
+def accumulate_values(sum_values, values):
+    for key, val in values.items():
+        if key in sum_values:
+            sum_values[key] += val.sum().item()
+        else:
+            sum_values[key] = val.sum().item()
+    return sum_values
+
+
 def train_model(config, data_loaders, net):
+    def data_loader_train():
+        while True:
+            for x in data_loaders['train']:
+                yield x
+    data_loader_valid = data_loaders['valid']
+    phase_param_train = config['phase_param']['train']
+    phase_param_valid = config['phase_param']['valid']
     optimizer = optim.Adam(net.parameters(), lr=config['lr'])
-    phase_list = ['train']
-    save_phase = 'train'
-    if 'valid' in data_loaders:
-        phase_list.append('valid')
-        save_phase = 'valid'
     path_ckpt = os.path.join(config['folder_out'], config['file_ckpt'])
     path_model = os.path.join(config['folder_out'], config['file_model'])
     if config['resume']:
         checkpoint = torch.load(path_ckpt)
-        start_epoch = checkpoint['epoch'] + 1
-        best_epoch = checkpoint['best_epoch']
+        step = checkpoint['step']
+        best_step = checkpoint['best_step']
         best_loss = checkpoint['best_loss']
         net.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        print('Resume training from epoch {}'.format(start_epoch))
+        print('Resume training from step {}'.format(step))
     else:
-        start_epoch = 0
-        best_epoch = -1
+        step = 0
+        best_step = -1
         best_loss = float('inf')
+        if config['path_pretrain'] is not None:
+            net.load_state_dict(torch.load(config['path_pretrain']))
         print('Start training')
     print()
-    with SummaryWriter(log_dir=config['folder_log'], purge_step=start_epoch) as writer:
-        for epoch in range(start_epoch, config['num_epochs']):
-            loss_coef = compute_loss_coef(config, epoch)
-            print('Epoch: {}/{}'.format(epoch, config['num_epochs'] - 1))
-            for phase in phase_list:
-                phase_param = config['phase_param'][phase]
-                net.train(phase == 'train')
-                sum_losses, sum_metrics = {}, {}
+    with SummaryWriter(log_dir=config['folder_log'], purge_step=step + 1) as writer:
+        for data_train in data_loader_train():
+            step += 1
+            if step > config['num_steps']:
+                break
+            loss_coef_train = compute_loss_coef(config, step)
+            net.train(True)
+            temp = loss_coef_train['temp']
+            hard = False
+            with torch.set_grad_enabled(True):
+                _, metrics, losses = net(data_train, phase_param_train, temp, hard, require_extra=False)
+            metrics = {key: val.mean() for key, val in metrics.items()}
+            losses = {key: val.mean() for key, val in losses.items()}
+            add_scalars(writer, metrics, losses, step, 'train')
+            loss_opt = torch.stack(
+                [loss_coef_train[key] * val.mean() for key, val in losses.items() if key != 'compare']).sum()
+            optimizer.zero_grad()
+            loss_opt.backward()
+            optimizer.step()
+            if step % config['ckpt_intvl'] == 0:
+                with torch.set_grad_enabled(False):
+                    results, _, _ = net(data_train, phase_param_train, temp, hard)
+                overview = compute_overview(config, data_train['image'], results)
+                writer.add_image('train', overview, global_step=step)
+                net.train(False)
+                temp = None
+                hard = True
+                sum_metrics, sum_losses = {}, {}
                 num_data = 0
-                for idx_batch, data in enumerate(data_loaders[phase]):
-                    batch_size = data['image'].shape[0]
-                    if phase == 'train':
-                        enable_grad = True
-                        temp = loss_coef['temp']
-                        hard = False
-                    else:
-                        enable_grad = False
-                        temp = None
-                        hard = True
-                    if idx_batch == 0 and epoch % config['summ_image_intvl'] == 0:
-                        with torch.set_grad_enabled(False):
-                            results, metrics, losses = net(data, phase_param, temp, hard)
-                        overview = compute_overview(config, data['image'], results)
-                        writer.add_image(phase.capitalize(), overview, global_step=epoch)
-                        writer.flush()
-                    with torch.set_grad_enabled(enable_grad):
-                        results, metrics, losses = net(data, phase_param, temp, hard, require_extra=False)
-                    for key, val in losses.items():
-                        if key in sum_losses:
-                            sum_losses[key] += val.sum().item()
-                        else:
-                            sum_losses[key] = val.sum().item()
-                    for key, val in metrics.items():
-                        if key in sum_metrics:
-                            sum_metrics[key] += val.sum().item()
-                        else:
-                            sum_metrics[key] = val.sum().item()
+                for idx_batch, data_valid in enumerate(data_loader_valid):
+                    batch_size = data_valid['image'].shape[0]
+                    with torch.set_grad_enabled(False):
+                        results, metrics, losses = net(
+                            data_valid, phase_param_valid, temp, hard, require_extra=idx_batch == 0)
+                    if idx_batch == 0:
+                        overview = compute_overview(config, data_valid['image'], results)
+                        writer.add_image('valid', overview, global_step=step)
+                    sum_metrics = accumulate_values(sum_metrics, metrics)
+                    sum_losses = accumulate_values(sum_losses, losses)
                     num_data += batch_size
-                    if phase == 'train':
-                        optimizer.zero_grad()
-                        loss_opt = torch.stack(
-                            [loss_coef[key] * val.mean() for key, val in losses.items() if key != 'compare']).sum()
-                        loss_opt.backward()
-                        optimizer.step()
-                mean_losses = {key: val / num_data for key, val in sum_losses.items()}
                 mean_metrics = {key: val / num_data for key, val in sum_metrics.items()}
-                if epoch % config['summ_scalar_intvl'] == 0:
-                    for key, val in mean_losses.items():
-                        writer.add_scalar('{}/loss_{}'.format(phase.capitalize(), key), val, global_step=epoch)
-                    for key, val in mean_metrics.items():
-                        writer.add_scalar('{}/metric_{}'.format(phase.capitalize(), key), val, global_step=epoch)
-                    writer.flush()
-                print(phase.capitalize())
+                mean_losses = {key: val / num_data for key, val in sum_losses.items()}
+                loss_compare = mean_losses['compare']
+                add_scalars(writer, mean_metrics, mean_losses, step, 'valid')
+                writer.flush()
+                if loss_compare < best_loss:
+                    best_loss = loss_compare
+                    best_step = step
+                    torch.save(net.state_dict(), path_model)
+                save_dict = {
+                    'step': step,
+                    'best_step': best_step,
+                    'best_loss': best_loss,
+                    'model_state_dict': net.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }
+                torch.save(save_dict, path_ckpt)
+                print('Step: {}/{}'.format(step, config['num_steps']))
                 print((' ' * 4).join([
                     'ARI_A: {:.3f}'.format(mean_metrics['ari_all']),
                     'ARI_O: {:.3f}'.format(mean_metrics['ari_obj']),
@@ -183,29 +209,14 @@ def train_model(config, data_loaders, net):
                     'LL: {:.1f}'.format(mean_metrics['ll']),
                     'Count: {:.3f}'.format(mean_metrics['count']),
                 ]))
-                if phase == save_phase:
-                    if mean_losses['compare'] < best_loss:
-                        best_loss = mean_losses['compare']
-                        best_epoch = epoch
-                        torch.save(net.state_dict(), path_model)
-            save_dict = {
-                'epoch': epoch,
-                'best_epoch': best_epoch,
-                'best_loss': best_loss,
-                'model_state_dict': net.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-            }
-            torch.save(save_dict, path_ckpt)
-            print('Best Epoch: {}'.format(best_epoch))
-            print()
+                print('Best Step: {}'.format(best_step))
+                print()
     return
 
 
 def test_model(config, data_loaders, net):
     def get_path_detail():
         return os.path.join(config['folder_out'], '{}.h5'.format(phase))
-    def get_path_metric():
-        return os.path.join(config['folder_out'], '{}.pkl'.format(phase))
     phase_list = [n for n in config['phase_param'] if n not in ['train', 'valid']]
     for phase in phase_list:
         path_detail = get_path_detail()
@@ -243,36 +254,4 @@ def test_model(config, data_loaders, net):
         with h5py.File(path_detail, 'w') as f:
             for key, val in results_all.items():
                 f.create_dataset(key, data=np.concatenate(val, axis=1), compression='gzip')
-    for phase in phase_list:
-        batch_size = config['batch_size']
-        phase_param = config['phase_param'][phase]
-        data_key = phase_param['key'] if 'key' in phase_param else phase
-        path_detail = get_path_detail()
-        metrics_all = {}
-        with h5py.File(config['path_data'], 'r') as f_data, h5py.File(path_detail, 'r') as f_result:
-            data = {key: f_data[data_key][key] for key in f_data[data_key]}
-            results_all = {key: f_result[key] for key in f_result}
-            for offset in range(0, data['image'].shape[0], batch_size):
-                sub_data = {key: val[offset:offset + batch_size] for key, val in data.items()}
-                sub_results_all = {key: val[:, offset:offset + batch_size] for key, val in results_all.items()}
-                for key, val in sub_data.items():
-                    if key in ['segment', 'overlap']:
-                        sub_data[key] = val.astype(np.int)
-                    else:
-                        sub_data[key] = val.astype(np.float) / 255
-                sub_results_all = {key: val.astype(np.float) / 255 for key, val in sub_results_all.items()}
-                sub_metrics_all = compute_metrics(config, sub_data, sub_results_all)
-                for key, val in sub_metrics_all.items():
-                    if key in metrics_all:
-                        metrics_all[key].append(val)
-                    else:
-                        metrics_all[key] = [val]
-        for key, val in metrics_all.items():
-            if isinstance(val[0], tuple):
-                metrics_all[key] = tuple([np.concatenate(n, axis=1) for n in zip(*val)])
-            else:
-                metrics_all[key] = np.concatenate(val, axis=1)
-        path_metric = get_path_metric()
-        with gzip.open(path_metric, 'wb') as f:
-            pickle.dump(metrics_all, f)
     return

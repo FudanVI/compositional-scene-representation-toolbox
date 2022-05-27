@@ -193,12 +193,14 @@ class NetworkWhat(nn.Module):
     def decode(self, mu, logvar, grid_full):
         sample = reparameterize_normal(mu, logvar)
         x = self.dec(sample)
-        x = nn_func.grid_sample(x, grid_full, align_corners=False)
-        return x, sample
+        what = nn_func.grid_sample(x, grid_full, align_corners=False)
+        bbox_mask = nn_func.grid_sample(
+            torch.ones([x.shape[0], 1, *x.shape[2:]], device=x.device), grid_full, align_corners=False)
+        return what, bbox_mask, sample
 
     def forward(self, x, grid_crop, grid_full):
         mu, logvar = self.encode(x, grid_crop)
-        what, sample = self.decode(mu, logvar, grid_full)
+        what, bbox_mask, sample = self.decode(mu, logvar, grid_full)
         kld = compute_kld_normal(mu, logvar, self.prior_mu, self.prior_logvar)
-        result = {'what': what, 'what_sample': sample, 'what_kld': kld}
+        result = {'what': what, 'bbox_mask': bbox_mask, 'what_sample': sample, 'what_kld': kld}
         return result

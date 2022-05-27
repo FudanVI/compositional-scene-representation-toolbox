@@ -73,6 +73,9 @@ class Model(nn.Module):
         pres_all = torch.cat([pres, torch.ones([pres.shape[0], 1], device=images.device)], dim=1)
         logits_mask = -0.5 * self.normal_invvar * (apc_pres_all - images[:, None]).pow(2).sum(-3, keepdim=True)
         mask = nn_func.softmax(logits_mask, dim=1)
+        mask_obj = mask[:, :-1] * result_obj['bbox_mask'] * pres[..., None, None, None]
+        mask_bck = 1 - mask_obj.sum(1, keepdim=True)
+        mask = torch.cat([mask_obj, mask_bck], dim=1)
         segment_all = torch.argmax(mask, dim=1, keepdim=True)
         segment_obj = torch.argmax(mask[:, :-1], dim=1, keepdim=True)
         mask_oh_all = torch.zeros_like(mask).scatter_(1, segment_all, 1)
