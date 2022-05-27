@@ -25,3 +25,6 @@
 [submodule "EfficientMORL"]
 	path = EfficientMORL
 	url = https://github.com/FudanVI/EfficientMORL.git
+[submodule "genesis"]
+	path = genesis
+	url = https://github.com/FudanVI/genesis.git
