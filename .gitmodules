@@ -22,3 +22,6 @@
 [submodule "SPACE"]
 	path = SPACE
 	url = https://github.com/FudanVI/SPACE.git
+[submodule "EfficientMORL"]
+	path = EfficientMORL
+	url = https://github.com/FudanVI/EfficientMORL.git
