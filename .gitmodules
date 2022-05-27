@@ -1,9 +1,18 @@
+[submodule "compositional-scene-representation-datasets/clevr-dataset-gen"]
+	path = compositional-scene-representation-datasets/clevr-dataset-gen
+	url = https://github.com/jinyangyuan/clevr-dataset-gen.git
+[submodule "compositional-scene-representation-datasets/shop-vrb-gen"]
+	path = compositional-scene-representation-datasets/shop-vrb-gen
+	url = https://github.com/jinyangyuan/shop-vrb-gen.git
+[submodule "multiple-unspecified-viewpoints/clevr-dataset-gen"]
+	path = multiple-unspecified-viewpoints/clevr-dataset-gen
+	url = https://github.com/jinyangyuan/clevr-dataset-gen.git
+[submodule "multiple-unspecified-viewpoints/shop-vrb-gen"]
+	path = multiple-unspecified-viewpoints/shop-vrb-gen
+	url = https://github.com/jinyangyuan/shop-vrb-gen.git
 [submodule "iodine-unofficial/multi_object_datasets"]
 	path = iodine-unofficial/multi_object_datasets
 	url = https://github.com/jinyangyuan/multi_object_datasets.git
 [submodule "monet-unofficial/multi_object_datasets"]
 	path = monet-unofficial/multi_object_datasets
 	url = https://github.com/jinyangyuan/multi_object_datasets.git
-[submodule "multiple-unspecified-viewpoints/clevr-dataset-gen"]
-	path = multiple-unspecified-viewpoints/clevr-dataset-gen
-	url = https://github.com/jinyangyuan/clevr-dataset-gen.git

@@ -1,11 +1,15 @@
 import argparse
 import numpy as np
+import torchvision
 from multiprocessing.pool import Pool
-from common import load_config, create_dataset
+from common import load_config, crop_image, rescale_image, create_dataset
 
 
-def convert_dsprites(x):
-    return np.stack([np.full_like(x, 255), x], axis=-1)
+def convert_mnist(x):
+    x = np.array(x[0])
+    x = x[..., None].repeat(2, axis=-1)
+    x = crop_image(x)
+    return x
 
 
 def generate_layers(config, elements, max_tries=10):
@@ -17,14 +21,18 @@ def generate_layers(config, elements, max_tries=10):
         masks = np.zeros((num_objects, *back_shape[:-1]), dtype=np.float64)
         index = np.random.randint(len(elements['objects']), size=num_objects)
         objects = [elements['objects'][idx] for idx in index]
-        for idx, image in enumerate(objects):
+        for idx, image_base in enumerate(objects):
+            ratio = np.random.rand()
+            scale = ratio * config['range_scale'][0] + (1 - ratio) * config['range_scale'][1]
+            image = rescale_image(image_base, scale)
+            image[..., :-1] = 255
             for _ in range(max_tries):
                 row1 = np.random.randint(back_shape[0] - image.shape[0] + 1)
                 row2 = row1 + image.shape[0]
                 col1 = np.random.randint(back_shape[1] - image.shape[1] + 1)
                 col2 = col1 + image.shape[1]
                 layers[idx, row1:row2, col1:col2] = image
-                masks[idx, row1:row2, col1:col2] = image[..., -1] / 255
+                masks[idx, row1:row2, col1:col2] = 1
                 for sub_idx in range(idx + 1):
                     mask = masks[sub_idx]
                     visible = (1 - masks[:sub_idx]).prod(0) * (1 - masks[sub_idx + 1:idx + 1]).prod(0)
@@ -46,18 +54,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--name')
     parser.add_argument('--path_config')
-    parser.add_argument('--path_in')
     parser.add_argument('--folder_out')
+    parser.add_argument('--folder_downloads', default='downloads')
     parser.add_argument('--num_parallel', type=int, default=32)
     parser.add_argument('--seed', type=int, default=0)
     config = load_config(parser)
     back = np.zeros((config['image_height'], config['image_width'], 2), dtype=np.uint8)
     back[..., -1] = 255
-    dsprites = np.load(config['path_in'])['imgs'] * 255
-    assert back.shape[:2] == dsprites.shape[-2:]
-    with Pool(config['num_parallel']) as pool:
-        objects = pool.map(convert_dsprites, dsprites)
-    elements = {'back': back, 'objects': objects}
+    mnist = {
+        phase: torchvision.datasets.MNIST(config['folder_downloads'], train=train, download=True)
+        for phase, train in zip(['train', 'test'], [True, False])
+    }
+    for key, val in mnist.items():
+        with Pool(config['num_parallel']) as pool:
+            mnist[key] = pool.map(convert_mnist, val)
+    elements = {key: {'back': back, 'objects': mnist[key_prev]}
+                for key, key_prev in zip(['train', 'valid', 'test', 'general'], ['train', 'train', 'test', 'test'])}
     create_dataset(config, elements, generate_layers)
     return
 
