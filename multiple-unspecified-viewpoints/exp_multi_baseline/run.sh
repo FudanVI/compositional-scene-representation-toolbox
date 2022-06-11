@@ -11,6 +11,7 @@ function run_model_1 {
         --path_data $path_data \
         --folder_log $folder_log \
         --folder_out $folder_out \
+        --without_oc \
         --train
 }
 
@@ -27,6 +28,7 @@ function run_model_2 {
         --path_pretrain $path_pretrain \
         --folder_log $folder_log \
         --folder_out $folder_out \
+        --without_oc \
         --train
 }
 

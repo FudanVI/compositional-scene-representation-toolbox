@@ -90,6 +90,7 @@ class Decoder(nn.Module):
         self.register_buffer('prior_attr_bck_mu', torch.zeros([latent_attr_bck_size]))
         self.register_buffer('prior_attr_bck_logvar', torch.zeros([latent_attr_bck_size]))
         self.prior_alpha = config['pres_alpha']
+        self.use_shadow = config['use_shadow']
         self.enc_sel = LinearBlock(
             in_features=slot_attr_size,
             feature_list=config['enc_sel_feature'] + [1],
@@ -143,6 +144,22 @@ class Decoder(nn.Module):
             mode=config['dec_bck_mode'],
             spatial_broadcast=config['dec_bck_sbd'],
         )
+        if self.use_shadow:
+            self.sdw_max = config['sdw_max']
+            self.dec_sdw = get_decoder(
+                in_features=latent_full_obj_size,
+                out_shape=[1, *image_shape[1:]],
+                channel_list_rev=config['dec_sdw_channel_rev'],
+                kernel_list_rev=config['dec_sdw_kernel_rev'],
+                stride_list_rev=config['dec_sdw_stride_rev'],
+                feature_list_rev=config['dec_sdw_feature_rev'],
+                activation=config['dec_sdw_act'],
+                mode=config['dec_sdw_mode'],
+                spatial_broadcast=config['dec_sdw_sbd'],
+            )
+        else:
+            self.sdw_max = None
+            self.dec_sdw = None
         self.register_buffer('grid', get_grid(image_shape[1:]))
 
     def forward(self, inputs, temp_pres, temp_ord, temp_shp, noise_scale_1, noise_scale_2, outputs_prev=None):
@@ -254,21 +271,36 @@ class Decoder(nn.Module):
         x_bck = self.dec_bck(full_bck_latent_reshape)
         x_bck = x_bck.reshape(batch_size, num_views, 1, *x_bck.shape[1:])
         bck = (x_bck + 1) * 0.5
+        if self.use_shadow:
+            logits_sdw = self.dec_sdw(full_obj_latent_reshape) - 3
+            logits_sdw = logits_sdw.reshape(batch_size, num_views, obj_slots, *logits_sdw.shape[1:])
+            sdw = torch.sigmoid(logits_sdw / self.sdw_max) * self.sdw_max
+            mask_sdw = (1 - sdw * pres.detach()[:, None, :, :, None, None]).prod(2, keepdim=True)
+            bck_sdw = bck * mask_sdw
+        else:
+            sdw = None
+            bck_sdw = bck
         mask = self.compute_mask(shp, logits_shp, pres, logits_pres, log_ord)
         mask_soft = self.compute_mask(shp_soft, logits_shp_soft, pres, logits_pres, log_ord)
         apc_all = torch.cat([apc, bck], dim=2)
         noisy_apc_all = torch.cat([noisy_apc, bck], dim=2)
-        recon = (mask * apc_all).sum(2)
-        noisy_recon = (mask * noisy_apc_all).sum(2)
-        recon_soft = (mask_soft * apc_all).sum(2)
+        apc_all_sdw = torch.cat([apc, bck_sdw], dim=2)
+        noisy_apc_all_sdw = torch.cat([noisy_apc, bck_sdw], dim=2)
+        recon = (mask * apc_all_sdw).sum(2)
+        noisy_recon = (mask * noisy_apc_all_sdw).sum(2)
+        recon_soft = (mask_soft * apc_all_sdw).sum(2)
         ones = torch.ones(*shp.shape[:2], 1, *shp.shape[3:], device=shp.device)
         shp_all = torch.cat([shp, ones], dim=2)
         shp_soft_all = torch.cat([shp_soft, ones], dim=2)
         outputs = {
             'recon': recon, 'noisy_recon': noisy_recon, 'recon_soft': recon_soft, 'mask': mask, 'mask_soft': mask_soft,
-            'apc': apc_all, 'noisy_apc': noisy_apc_all, 'shp': shp_all, 'shp_soft': shp_soft_all,
+            'apc': apc_all, 'noisy_apc': noisy_apc_all, 'bck_sdw': bck_sdw, 'shp': shp_all, 'shp_soft': shp_soft_all,
             'log_ord': log_ord, 'trs': trs,
         }
+        if self.use_shadow:
+            zeros = torch.zeros(*sdw.shape[:2], 1, *sdw.shape[3:], device=sdw.device)
+            sdw_all = torch.cat([sdw, zeros], dim=2)
+            outputs['sdw'] = sdw_all
         return outputs
 
 

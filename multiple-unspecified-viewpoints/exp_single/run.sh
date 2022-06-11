@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function basic {
+function run_model {
     path_config='config_'$name'.yaml'
     path_data=$folder_data'/'$name'.h5'
     folder_log='logs/'$name
@@ -15,10 +15,7 @@ function basic {
 
 run_file='../src/main.py'
 folder_data='../data'
-export CUDA_VISIBLE_DEVICES='0'
-for name in 'dsprites' 'abstract'; do
-    basic
+
+for name in 'dsprites' 'abstract' 'clevr' 'shop'; do
+    run_model
 done
-export CUDA_VISIBLE_DEVICES='0,1'
-name='clevr'
-basic

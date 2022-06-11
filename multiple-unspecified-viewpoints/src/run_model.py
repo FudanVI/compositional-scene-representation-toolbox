@@ -65,6 +65,16 @@ def compute_overview(config, outputs, dpi=100):
         noisy_apc = results_sel['noisy_apc'][fig_idx]
         shp = results_sel['shp'][fig_idx]
         shp_soft = results_sel['shp_soft'][fig_idx]
+        if 'sdw' in results_sel:
+            sdw = results_sel['sdw'][fig_idx] / 255
+            shp = shp / 255
+            shp_soft = shp_soft / 255
+            white = np.ones([1, 1, 3, 1, 1])
+            green = np.array([0, 1, 0])[None, None, :, None, None]
+            shp = shp * white + (1 - shp) * sdw * green
+            shp_soft = shp_soft * white + (1 - shp_soft) * sdw * green
+            shp = (shp * 255).astype(np.uint8)
+            shp_soft = (shp_soft * 255).astype(np.uint8)
         mask = results_sel['mask'][fig_idx]
         mask_soft = results_sel['mask_soft'][fig_idx]
         pres = results_sel['pres'][fig_idx]
@@ -116,13 +126,14 @@ def add_scalars(writer, metrics, losses, step, phase):
         writer.add_scalar('{}/loss_{}'.format(phase, key), val, global_step=step)
     return
 
-def add_overviews(config, writer, outputs, outputs_ext, outputs_view, outputs_attr, step, phase):
+def add_overviews(config, writer, outputs, outputs_view, outputs_attr, step, phase):
     overview = compute_overview(config, outputs)
     writer.add_image(phase, overview, global_step=step)
-    overview_view = compute_overview(config, outputs_view)
-    writer.add_image('{}_view'.format(phase), overview_view, global_step=step)
-    overview_attr = compute_overview(config, outputs_attr)
-    writer.add_image('{}_attr'.format(phase), overview_attr, global_step=step)
+    if not config['without_oc']:
+        overview_view = compute_overview(config, outputs_view)
+        writer.add_image('{}_view'.format(phase), overview_view, global_step=step)
+        overview_attr = compute_overview(config, outputs_attr)
+        writer.add_image('{}_attr'.format(phase), overview_attr, global_step=step)
     return
 
 
@@ -213,24 +224,25 @@ def train_model(config, data_loaders, net):
             if step % config['ckpt_intvl'] == 0:
                 with torch.set_grad_enabled(False):
                     outputs, outputs_ext, outputs_view, outputs_attr = net(
-                        data_train, phase_param_train, loss_coef_train, single_view=single_view)
-                add_overviews(
-                    config, writer, outputs, outputs_ext, outputs_view, outputs_attr, step, 'train')
+                        data_train, phase_param_train, loss_coef_train, single_view=single_view,
+                        require_results_gen=not config['without_oc'])
+                add_overviews(config, writer, outputs, outputs_view, outputs_attr, step, 'train')
                 net.train(False)
                 sum_metrics, sum_losses, sum_metrics_ext, sum_losses_ext = {}, {}, {}, {}
                 num_data = 0
                 for idx_batch, data_valid in enumerate(data_loader_valid):
                     require_results = idx_batch == 0
+                    require_results_gen = require_results and not config['without_oc']
                     batch_size = data_valid['image'].shape[0]
                     with torch.set_grad_enabled(False):
-                        outputs, outputs_ext, outputs_view, output_attr = net(
+                        outputs, outputs_ext, outputs_view, outputs_attr = net(
                             data_valid, phase_param_valid, loss_coef_valid, single_view=single_view,
-                            require_results=require_results, require_results_gen=require_results)
+                            require_results=require_results, require_results_gen=require_results_gen)
                     if require_results:
-                        add_overviews(
-                            config, writer, outputs, outputs_ext, outputs_view, outputs_attr, step, 'valid')
+                        add_overviews(config, writer, outputs, outputs_view, outputs_attr, step, 'valid')
                     outputs['loss']['compare'] = torch.stack(
-                        [loss_coef_valid[key] * val for key, val in outputs['loss'].items()]).sum(0)
+                        [loss_coef_valid[key] * val for key, val in outputs['loss'].items()
+                         if key.split('_')[0] != 'reg']).sum(0)
                     sum_metrics = accumulate_values(sum_metrics, outputs['metric'])
                     sum_losses = accumulate_values(sum_losses, outputs['loss'])
                     num_data += batch_size
@@ -268,6 +280,10 @@ def test_model(config, data_loaders, net):
     def get_path_detail():
         return os.path.join(config['folder_out'], '{}.h5'.format(phase))
     phase_list = [n for n in config['phase_param'] if n not in ['train', 'valid']]
+    for phase in phase_list:
+        path_detail = get_path_detail()
+        if os.path.exists(path_detail):
+            raise FileExistsError(path_detail)
     path_model = os.path.join(config['folder_out'], config['file_model'])
     net.load_state_dict(torch.load(path_model))
     net.train(False)
@@ -290,7 +306,7 @@ def test_model(config, data_loaders, net):
                                'logits_pres', 'zeta', 'logits_zeta', 'trs']:
                         continue
                     val = val.data.cpu().numpy()
-                    if key in ['recon', 'recon_soft', 'mask', 'mask_soft', 'apc', 'shp', 'shp_soft']:
+                    if key in ['recon', 'recon_soft', 'mask', 'mask_soft', 'apc', 'bck_sdw', 'shp', 'shp_soft', 'sdw']:
                         val = np.moveaxis(val, -3, -1)
                     if key in results:
                         results[key].append(val)
@@ -312,6 +328,12 @@ def test_model_multi(config, data_loaders, net):
     def get_path_detail():
         return os.path.join(config['folder_out'], '{}_{}.h5'.format(phase, num_views))
     phase_list = [n for n in config['phase_param'] if n not in ['train', 'valid']]
+    num_views_list = [1, 2, 4, 8]
+    for phase in phase_list:
+        for num_views in num_views_list:
+            path_detail = get_path_detail()
+            if os.path.exists(path_detail):
+                raise FileExistsError(path_detail)
     path_model = os.path.join(config['folder_out'], config['file_model'])
     net.load_state_dict(torch.load(path_model))
     net.train(False)
@@ -319,7 +341,7 @@ def test_model_multi(config, data_loaders, net):
     for phase in phase_list:
         phase_param = config['phase_param'][phase]
         data_key = phase_param['key'] if 'key' in phase_param else phase
-        for num_views in [1, 2, 4, 8]:
+        for num_views in num_views_list:
             phase_param['num_views'] = num_views
             path_detail = get_path_detail()
             results_all = {}
@@ -332,11 +354,12 @@ def test_model_multi(config, data_loaders, net):
                             require_results_gen=False, deterministic_data=True)
                         sub_results = outputs['result']
                     for key, val in sub_results.items():
-                        if key in ['image', 'noisy_recon', 'noisy_apc', 'view_latent', 'attr_obj_latent', 'attr_bck_latent',
-                                   'logits_pres', 'zeta', 'logits_zeta', 'trs']:
+                        if key in ['image', 'noisy_recon', 'noisy_apc', 'view_latent', 'attr_obj_latent',
+                                   'attr_bck_latent', 'logits_pres', 'zeta', 'logits_zeta', 'trs']:
                             continue
                         val = val.data.cpu().numpy()
-                        if key in ['recon', 'recon_soft', 'mask', 'mask_soft', 'apc', 'shp', 'shp_soft']:
+                        if key in ['recon', 'recon_soft', 'mask', 'mask_soft', 'apc', 'bck_sdw',
+                                   'shp', 'shp_soft', 'sdw']:
                             val = np.moveaxis(val, -3, -1)
                         if key in results:
                             results[key].append(val)
@@ -358,6 +381,12 @@ def test_model_cond(config, data_loaders, net):
     def get_path_detail():
         return os.path.join(config['folder_out'], 'cond_{}_{}.h5'.format(phase, num_views))
     phase_list = [n for n in config['phase_param'] if n not in ['train', 'valid']]
+    num_views_list = [1, 2, 4]
+    for phase in phase_list:
+        for num_views in num_views_list:
+            path_detail = get_path_detail()
+            if os.path.exists(path_detail):
+                raise FileExistsError(path_detail)
     path_model = os.path.join(config['folder_out'], config['file_model'])
     net.load_state_dict(torch.load(path_model))
     net.train(False)
@@ -365,7 +394,7 @@ def test_model_cond(config, data_loaders, net):
     for phase in phase_list:
         phase_param = config['phase_param'][phase]
         data_key = phase_param['key'] if 'key' in phase_param else phase
-        for num_views in [1, 2, 4]:
+        for num_views in num_views_list:
             phase_param['num_views'] = num_views
             path_detail = get_path_detail()
             results_all = {}
@@ -378,11 +407,12 @@ def test_model_cond(config, data_loaders, net):
                             require_results_gen=False, deterministic_data=True)
                         sub_results = outputs_ext['result_2']
                     for key, val in sub_results.items():
-                        if key in ['image', 'noisy_recon', 'noisy_apc', 'view_latent', 'attr_obj_latent', 'attr_bck_latent',
-                                   'logits_pres', 'zeta', 'logits_zeta', 'trs']:
+                        if key in ['image', 'noisy_recon', 'noisy_apc', 'view_latent', 'attr_obj_latent',
+                                   'attr_bck_latent', 'logits_pres', 'zeta', 'logits_zeta', 'trs']:
                             continue
                         val = val.data.cpu().numpy()
-                        if key in ['recon', 'recon_soft', 'mask', 'mask_soft', 'apc', 'shp', 'shp_soft']:
+                        if key in ['recon', 'recon_soft', 'mask', 'mask_soft', 'apc', 'bck_sdw',
+                                   'shp', 'shp_soft', 'sdw']:
                             val = np.moveaxis(val, -3, -1)
                         if key in results:
                             results[key].append(val)
@@ -397,4 +427,49 @@ def test_model_cond(config, data_loaders, net):
             with h5py.File(path_detail, 'w') as f:
                 for key, val in results_all.items():
                     f.create_dataset(key, data=np.concatenate(val, axis=1), compression='gzip')
+    return
+
+
+def test_model_latent(config, data_loaders, net):
+    def get_path_detail():
+        return os.path.join(config['folder_out'], 'latent_{}.h5'.format(phase))
+    phase_list = [n for n in config['phase_param'] if n not in ['train', 'valid']]
+    for phase in phase_list:
+        path_detail = get_path_detail()
+        if os.path.exists(path_detail):
+            raise FileExistsError(path_detail)
+    path_model = os.path.join(config['folder_out'], config['file_model'])
+    net.load_state_dict(torch.load(path_model))
+    net.train(False)
+    loss_coef = compute_loss_coef(config)
+    for phase in phase_list:
+        phase_param = config['phase_param'][phase]
+        path_detail = get_path_detail()
+        data_key = phase_param['key'] if 'key' in phase_param else phase
+        results_all = {}
+        for data in data_loaders[data_key]:
+            results = {}
+            for idx_run in range(config['num_tests']):
+                with torch.set_grad_enabled(False):
+                    outputs, outputs_ext, outputs_view, outputs_attr = net(
+                        data, phase_param, loss_coef, single_view=False, infer_extra=False, require_results=True,
+                        require_results_gen=False, deterministic_data=True)
+                    sub_results = outputs['result']
+                for key, val in sub_results.items():
+                    if key not in ['view_latent', 'attr_obj_latent', 'attr_bck_latent', 'logits_pres']:
+                        continue
+                    val = val.data.cpu().numpy()
+                    if key in results:
+                        results[key].append(val)
+                    else:
+                        results[key] = [val]
+            for key, val in results.items():
+                val = np.stack(val)
+                if key in results_all:
+                    results_all[key].append(val)
+                else:
+                    results_all[key] = [val]
+        with h5py.File(path_detail, 'w') as f:
+            for key, val in results_all.items():
+                f.create_dataset(key, data=np.concatenate(val, axis=1), compression='gzip')
     return

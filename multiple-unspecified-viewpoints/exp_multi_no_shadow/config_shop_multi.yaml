@@ -1,19 +1,23 @@
 ckpt_intvl: 1000
 save_intvl: 50
-summ_image_count: 8
+summ_image_count: 2
 
 phase_param:
   train:
-    num_views: 1
+    num_views: 4
+    num_views_ext: 4
     num_slots: 8
   valid:
-    num_views: 1
+    num_views: 4
+    num_views_ext: 4
     num_slots: 8
   test:
-    num_views: 1
+    num_views: 4
+    num_views_ext: 4
     num_slots: 8
   general:
-    num_views: 1
+    num_views: 4
+    num_views_ext: 4
     num_slots: 12
 
 loss_coef:
@@ -31,7 +35,7 @@ loss_coef:
     linear: [false]
   noise_scale_1:
     step: []
-    value: [0.0, 0.05]
+    value: [0.01, 0.05]
     linear: [true]
   noise_scale_2:
     step: []
@@ -42,16 +46,12 @@ loss_coef:
     value: [10.0, 10.0]
     linear: [true]
   reg_bck:
-    step: [25000]
-    value: [0.2, 0.0, 0.0]
-    linear: [true, true]
+    step: []
+    value: [0.0, 0.0]
+    linear: [true]
   reg_shp:
-    step: [200000, 300000]
+    step: [100000, 125000]
     value: [0.0, 0.0, 1.0e-3, 1.0e-3]
-    linear: [true, true, true]
-  reg_sdw:
-    step: [200000, 300000]
-    value: [0.0, 0.0, 1.0e-4, 1.0e-4]
     linear: [true, true, true]
   sched_kld:
     step: [100000]
@@ -61,14 +61,14 @@ loss_coef:
 normal_scale: 0.2
 lr: 4.0e-4
 lr_decay: 0.5
-decay_steps: 100000
+decay_steps: 50000
 warmup_steps: 10000
-single_steps: 0
-batch_size: 64
-num_steps: 500000
+single_steps: 25000
+batch_size: 32
+num_steps: 150000
 num_tests: 5
 seg_overlap: true
-use_shadow: true
+use_shadow: false
 
 enc_feat_channel: [64, 64, 64, 64]
 enc_feat_kernel: [5, 5, 5, 5]
@@ -78,8 +78,8 @@ enc_feat_act: relu
 
 slot_steps: 3
 slot_qry_size: 64
-slot_view_size: 1
-slot_attr_size: 64
+slot_view_size: 8
+slot_attr_size: 128
 enc_slot_feature_res: [128]
 enc_slot_act: relu
 
@@ -87,7 +87,7 @@ enc_sel_feature: [512, 512]
 enc_sel_act: relu
 
 pres_alpha: 4.5
-latent_view_size: 1
+latent_view_size: 4
 latent_attr_obj_size: 64
 latent_attr_bck_size: 8
 enc_view_feature: [512, 512]
@@ -100,30 +100,21 @@ enc_attr_bck_act: relu
 dec_ord_feature: [512, 512]
 dec_ord_act: relu
 
-sdw_max: 1.0
-dec_sdw_channel_rev: [64, 64, 64, 64, 64]
-dec_sdw_kernel_rev: [3, 5, 5, 5, 5, 5]
-dec_sdw_stride_rev: [1, 1, 2, 2, 2, 2]
-dec_sdw_feature_rev: null
-dec_sdw_act: relu
-dec_sdw_mode: conv_t
-dec_sdw_sbd: true
-
-dec_obj_channel_rev: [64, 64, 64, 64, 64]
+dec_obj_channel_rev: [32, 32, 64, 64, 128, 128]
 dec_obj_kernel_rev: [3, 5, 5, 5, 5, 5]
-dec_obj_stride_rev: [1, 1, 2, 2, 2, 2]
-dec_obj_feature_rev: null
+dec_obj_stride_rev: [1, 2, 1, 2, 1, 2]
+dec_obj_feature_rev: [4096, 4096]
 dec_obj_act: relu
-dec_obj_mode: conv_t
-dec_obj_sbd: true
+dec_obj_mode: nearest
+dec_obj_sbd: false
 
-dec_bck_channel_rev: [16, 16, 16]
-dec_bck_kernel_rev: [3, 5, 5, 5]
-dec_bck_stride_rev: [1, 1, 2, 2]
-dec_bck_feature_rev: null
+dec_bck_channel_rev: [16, 16, 32, 32, 64, 64]
+dec_bck_kernel_rev: [3, 5, 5, 5, 5, 5]
+dec_bck_stride_rev: [1, 2, 1, 2, 1, 2]
+dec_bck_feature_rev: [512, 512]
 dec_bck_act: relu
-dec_bck_mode: conv_t
-dec_bck_sbd: true
+dec_bck_mode: nearest
+dec_bck_sbd: false
 
 bl_momentum: 0.8
 net_bl_channel: [16, 16, 32, 32, 64, 64]

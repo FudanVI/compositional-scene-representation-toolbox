@@ -15,6 +15,7 @@ class Model(nn.Module):
         self.register_buffer('score_var', torch.zeros([]))
         self.bl_momentum = config['bl_momentum']
         self.seg_overlap = config['seg_overlap']
+        self.without_oc = config['without_oc']
         # Neural networks
         self.enc = Encoder(config)
         self.dec = Decoder(config)
@@ -54,10 +55,22 @@ class Model(nn.Module):
         noise_scale_1 = loss_coef['noise_scale_1']
         noise_scale_2 = loss_coef['noise_scale_2']
         image, segment, overlap = self.convert_data(data, num_views, deterministic_data)
+        if self.without_oc:
+            image = image.reshape(-1, 1, *image.shape[2:])
         results_enc = self.enc(image, num_slots, results_prev)
         results_dec = self.dec(results_enc, temp_pres, temp_ord, temp_shp, noise_scale_1, noise_scale_2, results_prev)
         results_raw = {'image': image, 'segment': segment, 'overlap': overlap, **results_enc, **results_dec}
         losses, loss_baseline = self.compute_losses(results_raw)
+        if self.without_oc:
+            results_raw['image'] = image.reshape(-1, num_views, *image.shape[2:])
+            results_raw['pres'] = results_raw['pres'][:, None]
+            for key in ['recon', 'noisy_recon', 'recon_soft', 'mask', 'mask_soft', 'apc', 'noisy_apc', 'bck_sdw', 'shp',
+                        'shp_soft', 'log_ord', 'trs', 'sdw', 'pres']:
+                results_raw[key] = results_raw[key].reshape(-1, num_views, *results_raw[key].shape[2:])
+            results_raw['pres'] = results_raw['pres'].max(1).values
+            for key, val in losses.items():
+                losses[key] = val.reshape(-1, num_views).sum(1)
+            loss_baseline = loss_baseline.reshape(-1, num_views).sum(1)
         metrics = self.compute_metrics(results_raw, loss_baseline)
         results = self.convert_results(results_raw) if require_results else {}
         outputs = {'result': results, 'metric': metrics, 'loss': losses}
@@ -114,7 +127,7 @@ class Model(nn.Module):
     def convert_results(results):
         disc_key_list = [
             'image', 'recon', 'noisy_recon', 'recon_soft', 'mask', 'mask_soft',
-            'apc', 'noisy_apc', 'shp', 'shp_soft', 'pres',
+            'apc', 'noisy_apc', 'bck_sdw', 'shp', 'shp_soft', 'sdw', 'pres',
         ]
         cont_key_list = [
             'view_latent', 'attr_obj_latent', 'attr_bck_latent', 'logits_pres', 'zeta', 'logits_zeta',
@@ -130,6 +143,7 @@ class Model(nn.Module):
     def compute_losses(self, results):
         image = results['image']
         noisy_recon = results['noisy_recon']
+        bck = results['apc'][:, :, -1]
         loss_nll = 0.5 * self.normal_invvar * (noisy_recon - image).square().sum([*range(1, image.ndim)])
         image_reshape = image.reshape(-1, *image.shape[2:])
         baseline_reshape = self.net_bl(image_reshape)
@@ -145,7 +159,15 @@ class Model(nn.Module):
         loss_discrete = -score * sel_log_prob
         loss_baseline = -score * baseline
         loss_nll = loss_nll + loss_discrete - loss_discrete.detach() + loss_baseline - loss_baseline.detach()
-        losses = {'nll': loss_nll}
+        loss_reg_bck = 0.5 * self.normal_invvar * (bck - image).square().sum([*range(1, image.ndim)])
+        shp_soft = results['shp_soft'][:, :, :-1]
+        zeta = results['zeta'][:, None, :, None, None]
+        loss_reg_shp = (zeta * shp_soft).sum([*range(1, shp_soft.ndim)])
+        losses = {'nll': loss_nll, 'reg_bck': loss_reg_bck, 'reg_shp': loss_reg_shp}
+        if 'sdw' in results:
+            sdw = results['sdw'][:, :, :-1]
+            loss_reg_sdw = (zeta * sdw).sum([*range(1, sdw.ndim)])
+            losses['reg_sdw'] = loss_reg_sdw
         losses.update({key: val for key, val in results.items() if key.split('_')[0] in ['kld', 'reg']})
         return losses, loss_baseline
 

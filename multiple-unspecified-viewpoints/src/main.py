@@ -7,7 +7,7 @@ import torch
 import yaml
 from dataset import get_data_loaders
 from model import get_model
-from run_model import train_model, test_model, test_model_multi
+from run_model import train_model, test_model, test_model_multi, test_model_cond, test_model_latent
 
 
 def get_config():
@@ -22,6 +22,7 @@ def get_config():
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--resume', action='store_true')
+    parser.add_argument('--without_oc', action='store_true')
     parser.add_argument('--use_timestamp', action='store_true')
     parser.add_argument('--file_ckpt', default='ckpt.pth')
     parser.add_argument('--file_model', default='model.pth')
@@ -76,6 +77,9 @@ def main():
         test_model(config, data_loaders, net)
     else:
         test_model_multi(config, data_loaders, net)
+        if not config['without_oc']:
+            test_model_cond(config, data_loaders, net)
+            test_model_latent(config, data_loaders, net)
     return
 
 
