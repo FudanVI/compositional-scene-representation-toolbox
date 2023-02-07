@@ -1,33 +1,54 @@
-[submodule "compositional-scene-representation-datasets/clevr-dataset-gen"]
-	path = compositional-scene-representation-datasets/clevr-dataset-gen
-	url = https://github.com/jinyangyuan/clevr-dataset-gen.git
-[submodule "compositional-scene-representation-datasets/shop-vrb-gen"]
-	path = compositional-scene-representation-datasets/shop-vrb-gen
-	url = https://github.com/jinyangyuan/shop-vrb-gen.git
-[submodule "multiple-unspecified-viewpoints/clevr-dataset-gen"]
-	path = multiple-unspecified-viewpoints/clevr-dataset-gen
-	url = https://github.com/jinyangyuan/clevr-dataset-gen.git
-[submodule "multiple-unspecified-viewpoints/shop-vrb-gen"]
-	path = multiple-unspecified-viewpoints/shop-vrb-gen
-	url = https://github.com/jinyangyuan/shop-vrb-gen.git
-[submodule "iodine-unofficial/multi_object_datasets"]
-	path = iodine-unofficial/multi_object_datasets
-	url = https://github.com/jinyangyuan/multi_object_datasets.git
-[submodule "monet-unofficial/multi_object_datasets"]
-	path = monet-unofficial/multi_object_datasets
-	url = https://github.com/jinyangyuan/multi_object_datasets.git
-[submodule "slot-attention-unofficial/multi_object_datasets"]
-	path = slot-attention-unofficial/multi_object_datasets
-	url = https://github.com/jinyangyuan/multi_object_datasets.git
-[submodule "SPACE"]
-	path = SPACE
-	url = https://github.com/FudanVI/SPACE.git
 [submodule "EfficientMORL"]
 	path = EfficientMORL
-	url = https://github.com/FudanVI/EfficientMORL.git
-[submodule "genesis"]
-	path = genesis
-	url = https://github.com/FudanVI/genesis.git
+	url = https://github.com/jinyangyuan/EfficientMORL.git
 [submodule "MulMON"]
 	path = MulMON
-	url = https://github.com/FudanVI/MulMON.git
+	url = https://github.com/jinyangyuan/MulMON.git
+[submodule "SPACE"]
+	path = SPACE
+	url = https://github.com/jinyangyuan/SPACE.git
+[submodule "SPACE_nc"]
+	path = SPACE_nc
+	url = https://github.com/jinyangyuan/SPACE.git
+	branch = non_compositional
+[submodule "acquired-deep-impressions"]
+	path = acquired-deep-impressions
+	url = https://github.com/jinyangyuan/acquired-deep-impressions.git
+[submodule "air-unofficial"]
+	path = air-unofficial
+	url = https://github.com/jinyangyuan/air-unofficial.git
+[submodule "compositional-scene-representation-datasets"]
+	path = compositional-scene-representation-datasets
+	url = https://github.com/jinyangyuan/compositional-scene-representation-datasets.git
+[submodule "genesis"]
+	path = genesis
+	url = https://github.com/jinyangyuan/genesis.git
+[submodule "genesis_nc"]
+	path = genesis_nc
+	url = https://github.com/jinyangyuan/genesis.git
+	branch = non_compositional
+[submodule "infinite-occluded-objects"]
+	path = infinite-occluded-objects
+	url = https://github.com/jinyangyuan/infinite-occluded-objects.git
+[submodule "iodine-unofficial"]
+	path = iodine-unofficial
+	url = https://github.com/jinyangyuan/iodine-unofficial.git
+[submodule "learnable-deep-priors"]
+	path = learnable-deep-priors
+	url = https://github.com/jinyangyuan/learnable-deep-priors.git
+[submodule "monet-unofficial"]
+	path = monet-unofficial
+	url = https://github.com/jinyangyuan/monet-unofficial.git
+[submodule "monet-unofficial_nc"]
+	path = monet-unofficial_nc
+	url = https://github.com/jinyangyuan/monet-unofficial.git
+	branch = non_compositional
+[submodule "multiple-unspecified-viewpoints"]
+	path = multiple-unspecified-viewpoints
+	url = https://github.com/jinyangyuan/multiple-unspecified-viewpoints.git
+[submodule "nem-unofficial"]
+	path = nem-unofficial
+	url = https://github.com/jinyangyuan/nem-unofficial.git
+[submodule "slot-attention-unofficial"]
+	path = slot-attention-unofficial
+	url = https://github.com/jinyangyuan/slot-attention-unofficial.git

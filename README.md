@@ -18,6 +18,13 @@ This toolbox contains code for synthesizing multiple datasets that could be used
 
 The `README.md` file in each folder contains the instructions on how to run the code.
 
+### Submodules
+
+Initialize submodules using the following command.
+```bash
+git submodule update --init --recursive
+```
+
 ### Create Benchmark Datasets
 
 Change the current working directory to `compositional-scene-representation-datasets` and follow the instructions described in `README.md` to create benchmark datasets.
@@ -26,11 +33,12 @@ Change the current working directory to `compositional-scene-representation-data
 
 #### AIR
 
-Change the current working directory to `air-unofficial/experiments_benchmark` and run `run.sh`.
+Change the current working directory to `air-unofficial/experiments_benchmark` and run `run.sh` and `run_nc.sh`.
 
 ```bash
 cd air-unofficial/experiments_benchmark
 ./run.sh
+./run_nc.sh
 cd ../..
 ```
 
@@ -38,11 +46,12 @@ Run `air-unofficial/experiments_benchmark/evaluate.ipynb` to evaluate the traine
 
 #### N-EM
 
-Change the current working directory to `nem-unofficial/experiments_benchmark` and run `run.sh`.
+Change the current working directory to `nem-unofficial/experiments_benchmark` and run `run.sh` and `run_nc.sh`.
 
 ```bash
 cd nem-unofficial/experiments_benchmark
 ./run.sh
+./run_nc.sh
 cd ../..
 ```
 
@@ -50,11 +59,12 @@ Run `nem-unofficial/experiments_benchmark/evaluate.ipynb` to evaluate the traine
 
 #### IODINE
 
-Change the current working directory to `iodine-unofficial/experiments_benchmark` and run `run.sh`.
+Change the current working directory to `iodine-unofficial/experiments_benchmark` and run `run.sh` and `run_nc.sh`.
 
 ```bash
 cd iodine-unofficial/experiments_benchmark
 ./run.sh
+./run_nc.sh
 cd ../..
 ```
 
@@ -62,11 +72,12 @@ Run `iodine-unofficial/experiments_benchmark/evaluate.ipynb` to evaluate the tra
 
 #### GMIOO
 
-Change the current working directory to `infinite-occluded-objects/experiments_benchmark` and run `run.sh`.
+Change the current working directory to `infinite-occluded-objects/experiments_benchmark` and run `run.sh` and `run_nc.sh`.
 
 ```bash
 cd infinite-occluded-objects/experiments_benchmark
 ./run.sh
+./run_nc.sh
 cd ../..
 ```
 
@@ -78,6 +89,14 @@ Change the current working directory to `monet-unofficial/experiments_benchmark`
 
 ```bash
 cd monet-unofficial/experiments_benchmark
+./run.sh
+cd ../..
+```
+
+Change the current working directory to `monet-unofficial_nc/experiments_benchmark` and run `run.sh`.
+
+```bash
+cd monet-unofficial_nc/experiments_benchmark
 ./run.sh
 cd ../..
 ```
@@ -94,15 +113,24 @@ cd SPACE/src
 cd ../..
 ```
 
+Change the current working directory to `SPACE_nc/src` and run `run.sh`.
+
+```bash
+cd SPACE_nc/src
+./run.sh
+cd ../..
+```
+
 Run `SPACE/evaluate.ipynb` to evaluate the trained models.
 
 #### Slot Attention
 
-Change the current working directory to `slot-attention-unofficial/experiments_benchmark` and run `run.sh`.
+Change the current working directory to `slot-attention-unofficial/experiments_benchmark` and run `run.sh` and `run_nc.sh`.
 
 ```bash
 cd slot-attention-unofficial/experiments_benchmark
 ./run.sh
+./run_nc.sh
 cd ../..
 ```
 
@@ -110,11 +138,12 @@ Run `slot-attention-unofficial/experiments_benchmark/evaluate.ipynb` to evaluate
 
 #### EfficientMORL
 
-Change the current working directory to `EfficientMORL` and run `run.sh`.
+Change the current working directory to `EfficientMORL` and run `run.sh` and `run_nc.sh`.
 
 ```bash
 cd EfficientMORL
 ./run.sh
+./run_nc.sh
 cd ..
 ```
 
@@ -126,6 +155,14 @@ Change the current working directory to `genesis` and run `run.sh`.
 
 ```bash
 cd genesis
+./run.sh
+cd ..
+```
+
+Change the current working directory to `genesis_nc` and run `run.sh`.
+
+```bash
+cd genesis_nc
 ./run.sh
 cd ..
 ```
