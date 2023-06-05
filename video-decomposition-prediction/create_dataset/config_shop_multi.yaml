@@ -1,0 +1,14 @@
+crop_up: 8
+crop_down: 72
+crop_left: 22
+crop_right: 86
+
+img_size : 64
+split_train: 5000
+split_valid: 5100
+split_test: 5200
+min_objects_train: 3
+max_objects_train: 6
+max_objects_general: 10
+num_views: 10
+

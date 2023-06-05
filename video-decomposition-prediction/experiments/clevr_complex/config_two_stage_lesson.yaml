@@ -1,0 +1,190 @@
+ckpt_intvl: 1000
+save_intvl: 50
+summ_image_count: 2
+normal_scale: 0.2
+batch_size: 32
+test_batch_size: 8
+num_tests: 5
+frequency: 1
+num_steps: 500000
+rho: 0.6
+prior_alpha: 12.6
+seg_overlap: true
+stage: two
+phase_param:
+  train:
+    num_views: 6
+    observed_views: 4
+    num_slots: 8
+  valid:
+    num_views: 6
+    observed_views: 4
+    num_slots: 8
+  test:
+    num_views: 6
+    observed_views: 4
+    num_slots: 8
+  general:
+    num_views: 6
+    observed_views: 4
+    num_slots: 12
+
+min_query_num: 1
+max_query_num: 4
+view_coef:
+  step: [50000,100000]
+  value: [6,8,10]
+
+loss_coef:
+  temp_pres:
+    step: [ ]
+    value: [ 0.5, 0.5]
+    linear: [ false ]
+  temp_ord:
+    step: [ ]
+    value: [ 0.5, 0.5 ]
+    linear: [ false ]
+
+  noise_scale_1:
+    step: [ ]
+    value: [ 0.05, 0.05 ]
+    linear: [ true ]
+
+  noise_scale_2:
+    step: [ ]
+    value: [ 1.0, 1.0 ]
+    linear: [ true ]
+
+  T:
+    kld_attr_bck:
+      step: [ ]
+      value: [ 10.0, 10.0 ]
+      linear: [ true ]
+
+    kld_view:
+      step: [ 80000 ]
+      value: [ 1, 20 , 20]
+      linear: [ true, true]
+
+    kld_lambda:
+      step: [ 80000 ]
+      value: [ 1, 20, 20 ]
+      linear: [ true, true]
+
+    sched_kld:
+      step: [ ]
+      value: [ 1.0, 1.0 ]
+      linear: [ true ]
+
+    reg_bck:
+      step: [ ]
+      value: [ 0.0 , 0.0]
+      linear: [ true ]
+
+  Q:
+    kld_view:
+      step: [ 80000 ]
+      value: [ 1, 20 , 20 ]
+      linear: [ true, true ]
+
+    kld_lambda:
+      step: [ 80000 ]
+      value: [ 1, 20, 20 ]
+      linear: [ true, true ]
+
+    sched_kld:
+      step: [ ]
+      value: [ 1.0, 1.0 ]
+      linear: [ true ]
+
+
+t_dim: 2
+use_info: false
+dynamic_timestep: true
+use_view_slot: true
+pos_concat: true
+info_dim: 0
+rule_dim: 5
+latent_view_size: 3
+latent_attr_obj_size: 64
+latent_attr_bck_size: 8
+lambda_param: 1
+lambda_sigma: 0.3
+cond_act: relu
+enc_channel_list: [ 64, 64, 64 ]
+enc_kernel_list: [ 3, 3, 3 ]
+enc_stride_list: [ 2, 2, 2]
+enc_feat_feature: [ 64, 64 ]
+enc_feat_act: relu
+enc_feat_norm: none
+lambda_feat_list: [ 64,32 ]
+lambda_feat_act: relu
+
+slot_channel_list: [ 64, 64, 64, 64 ]
+slot_kernel_list: [ 5, 5, 5, 5 ]
+slot_stride_list: [ 1, 1, 1, 1 ]
+slot_feature_list: [ 64,64 ]
+trans_share: false
+
+trans_feat_list: [ 256 ]
+trans_feat_act: relu
+nhead: 4
+nlayer: 4
+
+slot_steps: 3
+slot_qry_size: 64
+slot_view_size: 8
+slot_attr_size: 128
+enc_slot_feature_res: [ 128 ]
+enc_slot_act: relu
+
+enc_view_feature: [ 512,512 ]
+enc_view_act: relu
+
+gp_feat_list: [ 32,32,64,64 ]
+gp_feat_act: relu
+gp_act_out: tanh
+rbf_size: 8
+
+enc_attr_obj_feature: [ 512, 512 ]
+enc_attr_obj_act: relu
+enc_attr_bck_feature: [ 512, 512 ]
+enc_attr_bck_act: relu
+
+dec_ord_feature: [ 512, 512 ]
+dec_ord_act: relu
+
+dec_obj_channel_rev: [ 32, 32, 64, 64, 128, 128 ]
+dec_obj_kernel_rev: [ 3, 5, 5, 5, 5, 5 ]
+dec_obj_stride_rev: [ 1, 2, 1, 2, 1, 2 ]
+dec_obj_feature_rev: [ 4096, 4096 ]
+dec_obj_norm: none
+dec_obj_act: relu
+dec_obj_mode: nearest
+dec_obj_sbd: false
+
+dec_bck_channel_rev: [ 16, 16, 16, 16 ]
+dec_bck_kernel_rev: [ 3, 5, 5, 5 ]
+dec_bck_stride_rev: [ 1, 4, 1, 4 ]
+dec_bck_feature_rev: [ 512, 512 ]
+dec_bck_norm: none
+dec_bck_act: relu
+dec_bck_mode: nearest
+dec_bck_sbd: false
+
+pixel_bound: false
+
+lr: 4.0e-4
+lr_decay: 0.5
+decay_steps: 10000
+warmup_steps: 4000
+single_steps: 0
+
+determine_data: true
+pretrain: true
+mean_nll: true
+
+test_views: 10
+
+
+

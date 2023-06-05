@@ -1,0 +1,62 @@
+{
+  "shapes": {
+    "diamond": "Diamond",
+    "dolphin": "Dolphin",
+    "duck": "Duck",
+    "horse": "Horse",
+    "monkey": "Monkey",
+    "mug": "Mug",
+    "cube": "SmoothCube_v2",
+    "cylinder": "SmoothCylinder",
+    "sphere": "Sphere",
+    "teapot": "Teapot"
+  },
+  "colors": {
+    "gray": [87, 87, 87],
+    "red": [173, 35, 35],
+    "blue": [42, 75, 215],
+    "green": [29, 105, 20],
+    "brown": [129, 74, 25],
+    "purple": [129, 38, 192],
+    "cyan": [41, 208, 208],
+    "yellow": [255, 238, 51]
+  },
+  "materials": {
+    "rubber": "Rubber",
+    "metal": "MyMetal"
+  },
+  "sizes": {
+    "large": 0.8,
+    "small": 0.5
+  },
+  "diamond":{
+    "orientation": 180
+  },
+  "dolphin": {
+    "orientation": 90
+  },
+  "duck": {
+    "orientation": 100
+  },
+  "horse": {
+    "orientation": 90
+  },
+  "monkey": {
+    "orientation": 120
+  },
+  "mug": {
+    "orientation": 180
+  },
+  "cube": {
+    "orientation": 180
+  },
+  "cylinder": {
+    "orientation": 180
+  },
+  "sphere": {
+    "orientation": 180
+  },
+  "teapot": {
+    "orientation": 120
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "Diamond": 0,
+  "Dolphin": 1,
+  "Duck": 2,
+  "Horse": 3,
+  "Monkey": 4,
+  "Mug": 5,
+  "SmoothCube": 6,
+  "SmoothCylinder": 7,
+  "Sphere": 8,
+  "Teapot": 9
+}

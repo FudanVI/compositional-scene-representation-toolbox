@@ -1,0 +1,34 @@
+image_height: 64
+image_width: 64
+back: background
+objects:
+  - {name: a_1s, scale: 0.38, type: 2, row_min: 0.6}
+  - {name: a_2s, scale: 0.29, type: 2, row_min: 0.6}
+  - {name: a_3s, scale: 0.42, type: 2, row_min: 0.6}
+  - {name: a_4s, scale: 0.38, type: 2, row_min: 0.6}
+  - {name: a_5s, scale: 0.36, type: 2, row_min: 0.6}
+  - {name: s_2s, scale: 0.18, type: 1, row_max: 0.47}
+  - {name: s_3s, scale: 0.17, type: 0, row_max: 0.47}
+  - {name: s_4s, scale: 0.19, type: 1, row_max: 0.6}
+  - {name: s_6s, scale: 0.21, type: 1, row_max: 0.47}
+  - {name: s_7s, scale: 0.13, type: 1, row_max: 0.47}
+train:
+  num_data: 50000
+  num_objects: [2, 3, 4]
+  range_scale: [0.75, 1.0]
+  min_visible: 0.25
+valid:
+  num_data: 1000
+  num_objects: [2, 3, 4]
+  range_scale: [0.75, 1.0]
+  min_visible: 0.25
+test:
+  num_data: 1000
+  num_objects: [2, 3, 4]
+  range_scale: [0.75, 1.0]
+  min_visible: 0.25
+general:
+  num_data: 1000
+  num_objects: [5, 6]
+  range_scale: [0.75, 1.0]
+  min_visible: 0.25
