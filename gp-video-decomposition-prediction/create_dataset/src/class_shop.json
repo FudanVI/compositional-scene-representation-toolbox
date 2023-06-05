@@ -1,0 +1,12 @@
+{
+  "baking tray": 0,
+  "bowl": 1,
+  "kettle": 2,
+  "mug": 3,
+  "pan": 4,
+  "plate": 5,
+  "pot": 6,
+  "soda can": 7,
+  "thermos": 8,
+  "toaster": 9
+}

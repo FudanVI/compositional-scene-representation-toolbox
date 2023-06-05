@@ -1,0 +1,18 @@
+image_height: 64
+image_width: 64
+train:
+  num_data: 50000
+  num_objects: [2, 3, 4, 5]
+  min_visible: 0.25
+valid:
+  num_data: 1000
+  num_objects: [2, 3, 4, 5]
+  min_visible: 0.25
+test:
+  num_data: 1000
+  num_objects: [2, 3, 4, 5]
+  min_visible: 0.25
+general:
+  num_data: 1000
+  num_objects: [6, 7, 8]
+  min_visible: 0.25
