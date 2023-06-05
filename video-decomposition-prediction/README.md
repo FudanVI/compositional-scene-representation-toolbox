@@ -1,10 +1,8 @@
-```
-# Unsupervised Learning of Compositional Scene Representations with Inter-Property Dependency (OOLIPD)
+# Time-Conditioned Generative Modeling of Object-Centric Representations for Video Decomposition and Prediction
 
-This is the code repository of the paper "Unsupervised Learning of Compositional Scene Representations with Inter-Property Dependency".
+This is the code repository of the paper "Time-Conditioned Generative Modeling of Object-Centric Representations for Video Decomposition and Prediction".
 
 ## Dependence
-```
 
 - pytorch == 1.8
 - torchvision == 0.9
@@ -89,4 +87,3 @@ python $run_file \
         --folder_out $folder_out \
         --train
 ```
-
