@@ -1,10 +1,11 @@
 ## Compositional Scene Representation Toolbox
 
-This toolbox contains code for synthesizing multiple datasets that could be used to benchmark compositional scene representation learning methods, and collects the implementations of the following papers:
+This is an accompanied toolbox for the survey article: [Compositional Scene Representation Learning via Reconstruction: A Survey](https://arxiv.org/abs/2202.07135) \[Yuan et al., IEEE TPAMI 2023\]. The toolbox contains code for synthesizing multiple datasets that could be used for benchmarking compositional scene representation learning methods, and collects the implementations of the following papers:
 - [Spatial Mixture Models with Learnable Deep Priors for Perceptual Grouping](https://arxiv.org/abs/1902.02502) \[Yuan et al., AAAI-19\]
 - [Generative Modeling of Infinite Occluded Objects for Compositional Scene Representation](https://proceedings.mlr.press/v97/yuan19b.html) \[Yuan et al., ICML-19\]
 - [Knowledge-Guided Object Discovery with Acquired Deep Impressions](https://arxiv.org/abs/2103.10611) \[Yuan et al., AAAI-21\]
 - [Unsupervised Learning of Compositional Scene Representations from Multiple Unspecified Viewpoints](https://arxiv.org/abs/2112.03568) \[Yuan et al., AAAI-22\]
+- [Time-Conditioned Generative Modeling of Object-Centric Representations for Video Decomposition and Prediction](https://arxiv.org/abs/2301.08951). \[Gao \& Li, UAI-23\]
 - [Attend, Infer, Repeat: Fast Scene Understanding with Generative Models](https://papers.nips.cc/paper/2016/hash/52947e0ade57a09e4a1386d08f17b656-Abstract.html) \[Eslami et al., NeurIPS-16\]
 - [Neural Expectation Maximization](https://papers.nips.cc/paper/2017/hash/d2cd33e9c0236a8c2d8bd3fa91ad3acf-Abstract.html) \[Greff et al., NeurIPS-17\]
 - [Multi-Object Representation Learning with Iterative Variational Inference](https://proceedings.mlr.press/v97/greff19a.html) \[Greff et al., ICML-19\]
