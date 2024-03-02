@@ -1,0 +1,130 @@
+defaults:
+  - model: kubric
+  - _self_
+  - override hydra/job_logging: stdout
+
+hydra:
+  run:
+    dir: outputs/${data_name}_multi
+  job:
+    chdir: true
+  output_subdir: config
+
+data_name: ???
+debug: false
+profiling: false
+training: true
+testing: true
+resume: true
+precision: tf32
+folder_ckpt: checkpoint
+folder_pretrain: outputs/${data_name}_single
+
+dataset:
+  path: ../ocloc-data/${data_name}.h5
+  seg_overlap: true
+  image_shape: [128, 128, 3]
+  num_views_min: 1
+  num_views_max: 8
+  num_views_all: 8
+  batch_size:
+    train: 8
+    val: 8
+    test: 8
+    general: 8
+  num_slots:
+    train: 7
+    val: 7
+    test: 7
+    general: 11
+
+run_training:
+  num_slots:
+    train: 7
+    val: 7
+  max_steps: 500000
+  log_train_interval: 100
+  log_val_interval: 2000
+  log_image_count: 2
+  optimizer:
+    lr: 1.0e-4
+    gradient_clip_norm: 5.0
+  scheduler:
+    lr_decay: 0.5
+    decay_steps: ${run_training.max_steps}
+    warmup_steps: 0
+  loss:
+    normal_scale: 0.2
+    pres_alpha: 4.5
+    max_shadow_ratio: 0.5
+    coef:
+      ratio_dec:
+        step: [100000, 150000]
+        value: [1.0e-3, 1.0e-3, 1.0, 1.0]
+        linear: [false, false, false]
+      temp_pres:
+        step: []
+        value: [10.0, 1.0]
+        linear: [false]
+      temp_shp:
+        step: []
+        value: [10.0, 1.0]
+        linear: [false]
+      noise_scale:
+        step: []
+        value: [0.01, 0.05]
+        linear: [true]
+      noise_min:
+        step: [100000, 400000]
+        value: [0.0, 0.08, 0.08, 0.05]
+        linear: [true, true, true]
+      noise_max:
+        step: [100000]
+        value: [0.0, 0.2, 0.1]
+        linear: [true, true]
+      ratio_imp_sdw:
+        step: [100000, 400000]
+        value: [0.99, 0.99, 0.5, 0.0]
+        linear: [true, true, true]
+      ratio_mixture:
+        step: [100000, 400000]
+        value: [0.01, 0.01, 0.5, 1.0]
+        linear: [true, true, true]
+      ratio_stick_breaking:
+        step: [100000]
+        value: [0.01, 0.01, 1.0]
+        linear: [true, true]
+      kld_bck:
+        step: []
+        value: [2.0, 2.0]
+        linear: [true]
+      reg_bck:
+        step: [25000]
+        value: [0.01, 0.0, 0.0]
+        linear: [true, true]
+      reg_pres:
+        step: [100000]
+        value: [0.0, 1.0e-4, 1.0e-4]
+        linear: [true, true]
+      reg_shp:
+        step: [100000]
+        value: [1.0e-4, 0.0, 0.0]
+        linear: [true, true]
+      reg_sdw:
+        step: [100000]
+        value: [1.0e-4, 0.0, 0.0]
+        linear: [true, true]
+      reg_sdw_ratio:
+        step: [100000]
+        value: [0.0, 1.0e-2, 1.0e-2]
+        linear: [true, true]
+      sched_kld:
+        step: [100000]
+        value: [0.0, 1.0, 1.0]
+        linear: [true, true]
+
+run_testing:
+  num_slots:
+    test: 7
+    general: 11
+  num_tests: 5

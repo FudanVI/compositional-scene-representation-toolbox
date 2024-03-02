@@ -5,6 +5,7 @@ This is an accompanied toolbox for the survey article: [Compositional Scene Repr
 - [Generative Modeling of Infinite Occluded Objects for Compositional Scene Representation](https://proceedings.mlr.press/v97/yuan19b.html) \[Yuan et al., ICML-19\]
 - [Knowledge-Guided Object Discovery with Acquired Deep Impressions](https://arxiv.org/abs/2103.10611) \[Yuan et al., AAAI-21\]
 - [Unsupervised Learning of Compositional Scene Representations from Multiple Unspecified Viewpoints](https://arxiv.org/abs/2112.03568) \[Yuan et al., AAAI-22\]
+- [Unsupervised Object-Centric Learning from Multiple Unspecified Viewpoints](https://arxiv.org/abs/2401.01922) \[Yuan et al., TPAMI-24\]
 - [Time-Conditioned Generative Modeling of Object-Centric Representations for Video Decomposition and Prediction](https://arxiv.org/abs/2301.08951). \[Gao \& Li, UAI-23\]
 - [Attend, Infer, Repeat: Fast Scene Understanding with Generative Models](https://papers.nips.cc/paper/2016/hash/52947e0ade57a09e4a1386d08f17b656-Abstract.html) \[Eslami et al., NeurIPS-16\]
 - [Neural Expectation Maximization](https://papers.nips.cc/paper/2017/hash/d2cd33e9c0236a8c2d8bd3fa91ad3acf-Abstract.html) \[Greff et al., NeurIPS-17\]

@@ -1,0 +1,71 @@
+use_shadow: true
+max_shadow_val: 0.8
+latent_view_size: 4
+latent_obj_size: 64
+latent_bck_size: 8
+enc_img:
+  channel_list: [64, 64, 64, 64, 64]
+  kernel_list: [4, 5, 5, 5, 5]
+  stride_list: [2, 1, 1, 1, 1]
+  activation: silu
+enc_cvt:
+  feature_list: [64, 64]
+  activation: silu
+enc_slot:
+  num_steps: 3
+  qry_size: 64
+  slot_view_size: 8
+  slot_attr_size: 128
+  feature_res_list: [128]
+  activation: silu
+enc_view:
+  feature_list: [512, 512]
+  activation: silu
+enc_obj:
+  feature_list: [512, 512]
+  activation: silu
+enc_bck_in:
+  feature_list: [512, 512]
+  activation: silu
+enc_bck_out:
+  feature_list: [512, 512]
+  activation: silu
+# dec_bck:
+#   use_complex: false
+#   channel_list_rev: [8, 8, 16, 16, 32, 32, 64, 64]
+#   kernel_list_rev: [3, 4, 3, 4, 3, 4, 3, 4]
+#   stride_list_rev: [1, 2, 1, 2, 1, 2, 1, 2]
+#   feature_list_rev: [256, 256, 256, 256]
+#   activation: silu
+dec_bck:
+  use_complex: true
+  channel_list_rev: [16, 16, 32, 32, 64, 64]
+  kernel_list_rev: [3, 4, 3, 4, 3, 4]
+  stride_list_rev: [1, 2, 1, 2, 1, 2]
+  feature_list_rev: [256, 256]
+  num_layers: 2
+  d_model: 64
+  nhead: 4
+  dim_feedforward: 128
+  activation: silu
+dec_obj_misc:
+  feature_list: [512, 512]
+  activation: silu
+# dec_obj_img:
+#   use_complex: false
+#   channel_list_rev: [16, 16, 32, 32, 64, 64, 128, 128]
+#   kernel_list_rev: [3, 4, 3, 4, 3, 4, 3, 4]
+#   stride_list_rev: [1, 2, 1, 2, 1, 2, 1, 2]
+#   feature_list_rev: [1024, 1024, 1024, 1024]
+#   activation: silu
+dec_obj_img:
+  use_complex: true
+  channel_list_rev: [32, 32, 64, 64, 128, 128]
+  kernel_list_rev: [3, 4, 3, 4, 3, 4]
+  stride_list_rev: [1, 2, 1, 2, 1, 2]
+  feature_list_rev: [1024, 1024]
+  num_layers: 2
+  d_model: 128
+  nhead: 8
+  dim_feedforward: 256
+  activation: silu

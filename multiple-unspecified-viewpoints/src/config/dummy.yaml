@@ -1,0 +1,199 @@
+defaults:
+  - override hydra/job_logging: stdout
+
+hydra:
+  run:
+    dir: outputs_debug/${now:%Y-%m-%d_%H-%M-%S}
+  job:
+    chdir: true
+  output_subdir: config
+
+debug: true
+profiling: false
+training: true
+testing: true
+resume: false
+precision: tf32
+folder_ckpt: checkpoint
+
+dataset:
+  seg_overlap: true
+  image_shape: [128, 128, 3]
+  num_views_min: 1
+  num_views_max: 8
+  num_views_all: 8
+  num_views_data: 10
+  batch_size:
+    train: 8
+    val: 8
+    test: 8
+    general: 8
+  num_slots:
+    train: 7
+    val: 7
+    test: 7
+    general: 11
+
+model:
+  use_shadow: true
+  max_shadow_val: 0.8
+  latent_view_size: 4
+  latent_obj_size: 64
+  latent_bck_size: 8
+  enc_img:
+    channel_list: [64, 64, 64, 64, 64]
+    kernel_list: [4, 5, 5, 5, 5]
+    stride_list: [2, 1, 1, 1, 1]
+    activation: silu
+  enc_cvt:
+    feature_list: [64, 64]
+    activation: silu
+  enc_slot:
+    num_steps: 3
+    qry_size: 64
+    slot_view_size: 8
+    slot_attr_size: 128
+    feature_res_list: [128]
+    activation: silu
+  enc_view:
+    feature_list: [512, 512]
+    activation: silu
+  enc_obj:
+    feature_list: [512, 512]
+    activation: silu
+  enc_bck_in:
+    feature_list: [512, 512]
+    activation: silu
+  enc_bck_out:
+    feature_list: [512, 512]
+    activation: silu
+  # dec_bck:
+  #   use_complex: false
+  #   channel_list_rev: [8, 8, 16, 16, 32, 32, 64, 64]
+  #   kernel_list_rev: [3, 4, 3, 4, 3, 4, 3, 4]
+  #   stride_list_rev: [1, 2, 1, 2, 1, 2, 1, 2]
+  #   feature_list_rev: [256, 256, 256, 256]
+  #   activation: silu
+  dec_bck:
+    use_complex: true
+    channel_list_rev: [16, 16, 32, 32, 64, 64]
+    kernel_list_rev: [3, 4, 3, 4, 3, 4]
+    stride_list_rev: [1, 2, 1, 2, 1, 2]
+    feature_list_rev: [256, 256]
+    num_layers: 2
+    d_model: 64
+    nhead: 4
+    dim_feedforward: 128
+    activation: silu
+  dec_obj_misc:
+    feature_list: [512, 512]
+    activation: silu
+  # dec_obj_img:
+  #   use_complex: false
+  #   channel_list_rev: [16, 16, 32, 32, 64, 64, 128, 128]
+  #   kernel_list_rev: [3, 4, 3, 4, 3, 4, 3, 4]
+  #   stride_list_rev: [1, 2, 1, 2, 1, 2, 1, 2]
+  #   feature_list_rev: [1024, 1024, 1024, 1024]
+  #   activation: silu
+  dec_obj_img:
+    use_complex: true
+    channel_list_rev: [32, 32, 64, 64, 128, 128]
+    kernel_list_rev: [3, 4, 3, 4, 3, 4]
+    stride_list_rev: [1, 2, 1, 2, 1, 2]
+    feature_list_rev: [1024, 1024]
+    num_layers: 2
+    d_model: 128
+    nhead: 8
+    dim_feedforward: 256
+    activation: silu
+
+run_training:
+  num_slots:
+    train: 7
+    val: 7
+  max_steps: 100
+  log_train_interval: 5
+  log_val_interval: 10
+  log_image_count: 2
+  optimizer:
+    lr: 5.0e-4
+    gradient_clip_norm: 5.0
+  scheduler:
+    lr_decay: 0.1
+    decay_steps: ${run_training.max_steps}
+    warmup_steps: 20000
+  loss:
+    normal_scale: 0.2
+    pres_alpha: 4.5
+    max_shadow_ratio: 0.5
+    coef:
+      ratio_dec:
+        step: []
+        value: [1.0e-3, 1.0]
+        linear: [false]
+      temp_pres:
+        step: []
+        value: [10.0, 5.0]
+        linear: [false]
+      temp_shp:
+        step: []
+        value: [10.0, 5.0]
+        linear: [false]
+      noise_scale:
+        step: []
+        value: [0.01, 0.05]
+        linear: [true]
+      noise_min:
+        step: []
+        value: [0.0, 0.05]
+        linear: [true]
+      noise_max:
+        step: []
+        value: [0.0, 1.0]
+        linear: [true]
+      ratio_imp_sdw:
+        step: []
+        value: [0.99, 0.0]
+        linear: [true]
+      ratio_mixture:
+        step: []
+        value: [0.01, 1.0]
+        linear: [true]
+      ratio_stick_breaking:
+        step: []
+        value: [0.01, 1.0]
+        linear: [true]
+      kld_bck:
+        step: []
+        value: [2.0, 2.0]
+        linear: [true]
+      reg_bck:
+        step: []
+        value: [0.2, 0.0]
+        linear: [true]
+      reg_pres:
+        step: []
+        value: [0.0, 1.0e-4]
+        linear: [true]
+      reg_shp:
+        step: []
+        value: [0.0, 1.0e-4]
+        linear: [true]
+      reg_sdw:
+        step: []
+        value: [0.0, 1.0e-4]
+        linear: [true]
+      reg_sdw_ratio:
+        step: []
+        value: [0.0, 1.0e-4]
+        linear: [true]
+      sched_kld:
+        step: []
+        value: [0.0, 1.0]
+        linear: [true]
+
+run_testing:
+  num_slots:
+    test: 7
+    general: 11
+  num_tests: 5

@@ -43,12 +43,12 @@
 	path = monet-unofficial_nc
 	url = https://github.com/jinyangyuan/monet-unofficial.git
 	branch = non_compositional
-[submodule "multiple-unspecified-viewpoints"]
-	path = multiple-unspecified-viewpoints
-	url = https://github.com/jinyangyuan/multiple-unspecified-viewpoints.git
 [submodule "nem-unofficial"]
 	path = nem-unofficial
 	url = https://github.com/jinyangyuan/nem-unofficial.git
 [submodule "slot-attention-unofficial"]
 	path = slot-attention-unofficial
 	url = https://github.com/jinyangyuan/slot-attention-unofficial.git
+[submodule "multiple-unspecified-viewpoints/ocloc-data"]
+	path = multiple-unspecified-viewpoints/ocloc-data
+	url = https://huggingface.co/datasets/jinyangyuan/ocloc-data
